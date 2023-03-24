@@ -319,6 +319,7 @@ plot(peatbogs_trondelag, axes = FALSE)
 
 ## 3.1. Change land cover class values ----
 #Discontinuous urban fabric (changed from 2 to 20)
+ #all the urban classes are pooled together, due to their sparse distribution across Norway
 norway_corine_modified <- app(norway_corine,
                               fun = function(x){x[x %in% c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)] <- 1; return(x)})
 
