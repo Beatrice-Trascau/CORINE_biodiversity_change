@@ -11,12 +11,6 @@
 # 0. LOAD PACKAGES ----
 library(here)
 library(terra)
-library(geodata)
-library(tidyverse)
-library(dplyr)
-library(ggplot2)
-library(gt)
-library(networkD3)
 
 # 1. LOAD CORINE STACKS ----
 
