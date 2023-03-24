@@ -6,7 +6,7 @@
 ##---- 2.2_biodiversity_and_land_cover_change ----##
 ##------------------------------------------------##
 
-#This script contains code to clean the biodiversity records downloaded from GBIF
+#This script contains code to quantify the number of occurrence records in pixels undergoing land cover changes
 
 # 0. LOAD PACKAGES ----
 library(here)
