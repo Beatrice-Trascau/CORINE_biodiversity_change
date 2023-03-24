@@ -8,13 +8,13 @@
 
 #This script contains code which loads and prepares CORINE land cover layers for analysis
 
-# 0. Load packages ----
+# 0. LOAD PACKAGES ----
 library(here)
 library(terra)
 library(sf)
 library(geodata)
 
-# 1. Download CORINE Layers (2000, 2006, 2012, 2018) from Box ----
+# 1. DOWNLOAD CORINE LAYERS (2000, 2006, 2012, 2018) FROM BOX ----
 
 #Add Download link from box
 U2006_CLC2000_V2020_20u1 <- ("https://ntnu.box.com/shared/static/ffmbbb89aikwg64tg9ei30c8fnf7chl2.tif")
@@ -28,7 +28,7 @@ download.file(U2012_CLC2006_V2020_20u1, "U2012_CLC2006_V2020_20u1.tif")
 download.file(U2018_CLC2012_V2020_20u1, "U2018_CLC2012_V2020_20u1.tif")
 download.file(U2018_CLC2018_V2020_20u1, "U2018_CLC2018_V2020_20u1.tif")
 
-# 2. Read in CORINE Layers ----
+# 2. READ IN CORINE LAYERS ----
 
 #Read in CORINE layers downloaded above
 corine_2000 <- rast("U2006_CLC2000_V2020_20u1.tif")
@@ -40,7 +40,7 @@ corine_2018 <- rast("U2018_CLC2018_V2020_20u1.tif")
 corine_stack <- c(corine_2000, corine_2006,
                   corine_2012, corine_2018)
 
-# 3. Cut & Maks Layers to Norway ----
+# 3. CUT & MASK LAYERS TO NORWAY ----
 
 ## 3.1. Download country shapefile ----
 norway <- geodata::gadm(country = "NOR", level = 0, 
@@ -74,7 +74,7 @@ raster_name <- paste0("norway_corine_stack.tif")
 terra::writeRaster(norway_corine_stack,
                    filename = raster_name)
 
-# 4. Cut & Mask Layers to Trondelag ----
+# 4. CUT & MASK LAYERS TO TRONDELAG ----
 
 ## 4.1. Create Trondelag Shapefile ----
 
