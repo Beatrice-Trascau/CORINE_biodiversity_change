@@ -12,11 +12,6 @@
 library(here)
 library(data.table)
 library(CoordinateCleaner)
-library(terra)
-library(sf)
-library(tidyverse)
-library(dplyr)
-library(ggplot2)
 
 # 1. LOAD OCCURRENCE RECORDS ----
 
