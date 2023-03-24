@@ -6,7 +6,7 @@
 ##---- 1.1_corine_land_cover_class_exploration ---##
 ##------------------------------------------------##
 
-# This script contains code which loads and explored the land cover classes described by CORINE
+# This script contains code which loads, explored, and modify the land cover classes described by CORINE
 
 # 0. LOAD PACKAGES ----
 library(here)
