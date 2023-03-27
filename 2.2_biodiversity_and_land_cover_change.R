@@ -116,8 +116,103 @@ for (i in 1:3) {
   assign(new_name_dfs, occurrence_land_cover_overlap_dfs[[i]])
 }
 
-## 3.3. Merge all dfs of occurrence_land_cover_overlap with land_cover change_dfs
+## 3.3. Merge all dfs of occurrence_land_cover_overlap with land_cover change_dfs ----
 #List of land_cover_change_dfs
 land_cover_change_df_list <- list(as.data.frame(norway_corine[[1]] - norway_corine[[2]]),
                                   as.data.frame(norway_corine[[2]] - norway_corine[[3]]),
                                   as.data.frame(norway_corine[[3]] - norway_corine[[4]]))
+
+#Empty list to save the merged dfs
+merged_occurrences_in_land_cover <- list()
+
+#For loop to merge occurrence_land_cover_overlap_dfs and land_cover_change_dfs
+for(i in 1: length(occurrence_land_cover_overlap_dfs)){
+  #Merge occurrence_land_cover_overlap_dfs and land_cover_changes_dfs
+  merged_occurrences_in_land_cover[[i]] <- merge(land_cover_change_df_list[[i]],
+                                                 occurrence_land_cover_overlap_dfs[[i]],
+                                                 by = c("x", "y"))
+  #Create a name vector to store the names of the dfs created
+  new_name <- paste0("merged_occurrences_in_land_cover_period", i)
+  #Store rasterize() output under the name 'new_name' in the global environment.
+  assign(new_name, merged_occurrences_in_land_cover[[i]])
+}
+
+## 3.4.  Create df of occurrences in land cover for all time periods----
+#Merge all merged_occurrences_in_land_cover into a single df
+all_periods_occurrence_in_land_cover <- bind_rows(merged_occurrences_in_land_cover_period1,
+                                                  merged_occurrences_in_land_cover_period2,
+                                                  merged_occurrences_in_land_cover_period3)
+
+#Write dataframe
+write.csv(all_years_occurrence_in_land_cover, "occurrences_in_land_cover_changes.csv")
+
+# 4. VISUALIZE DATA ----
+
+## 4.1. Read in data & clean df (if needed) ----
+#Read in data
+occurrence_in_land_cover <- all_years_occurrence_in_land_cover
+
+#Change column names 
+occurrence_in_land_cover <- occurrence_in_land_cover |>
+  colnames(occurrence_in_land_cover) <- c("year", "lat", "long",
+                                          "pixel_status", "occurrence_count") |>
+  #Replace NA values with 0 in col "occurrence_count"
+  mutate(occurrence_count = case_when(occurrence_count == NA ~ 0),
+         #Convert values in column pixel_status to factorial constant or changed value
+         pixel_status = case_when(pixel_status == 0 ~ "constant",  "changed"))
+
+
+
+#Remove "pixels" which did not have any species (i.e. occurrence_count = 0)
+new_occurrence_in_land_cover <- occurrence_in_land_cover[
+  occurrence_in_land_cover$occurrence_count != 0, ]
+
+#Save the new dataframe
+write.csv(new_occurrence_in_land_cover,
+          file = "new_occurrence_in_land_cover_for_plotting.csv")
+
+
+## 4.2. Compare number of occurrences between changed and constant pixels ----
+ggplot(occurrence_in_land_cover, 
+       aes(x = pixel_status, y = occurrence_count, fill = pixel_status))+
+  geom_boxplot()+
+  scale_fill_manual(values = c("#faecb7", "#00a000"))+
+  scale_x_discrete(breaks = c("changed", "constant"),
+                   labels = c("Change", "No Change"))+
+  xlab("Land-use Status in Pixel")+
+  ylab("Number of Occurrences")+
+  theme_classic()+
+  theme(axis.title.x = element_text(size = 16),
+        axis.text.x = element_text(size = 14,
+                                   color = "#000000"),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 14,
+                                   color = "#000000"),
+        legend.position = "none")
+
+##4.3. Compare number of occurrences between changed and constant pixels and years ----
+ggplot(occurrence_in_land_cover)+
+  geom_bar(aes(x = year, y = occurrence_count,
+               fill = pixel_status),
+           stat = "identity", 
+           position = "dodge")+
+  scale_x_discrete(limits = c(1993:2020))+
+  scale_fill_manual(name = "Land-use Status in Pixel",
+                    breaks = c("changed", "constant"),
+                    labels = c("Change", "No Change"),
+                    values = c("#faecb7", "#00a000"))+
+  xlab("Year of Sampling")+
+  ylab("Number of occurrences")+
+  theme_classic()+
+  theme(axis.title.x = element_text(size = 16),
+        axis.text.x = element_text(size = 14,
+                                   angle = 45,
+                                   color = "#000000",
+                                   hjust = 1),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 14,
+                                   color = "#000000"),
+        legend.title = element_text(size=14),
+        legend.text = element_text(size = 13.5))
+
+
