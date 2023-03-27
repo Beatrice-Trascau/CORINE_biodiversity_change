@@ -23,7 +23,7 @@ library(ggplot2)
 ## 1.1. Download cleaned occurrence records and modified corine stack from box ---
 
 #Add download link
-occurrences <- ("")
+occurrences <- ("https://ntnu.box.com/shared/static/cgjbsfs24m31uov6ir4vkkmw6cs7ga36.txt")
 norway_corine <- ("https://ntnu.box.com/shared/static/s406n4td0cmtfjsxwllz8klnkvksiyul.tif")
 
 #Download the file
