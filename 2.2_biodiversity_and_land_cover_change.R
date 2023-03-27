@@ -23,11 +23,11 @@ library(ggplot2)
 ## 1.1. Download cleaned occurrence records and modified corine stack from box ---
 
 #Add download link
-occurrences <- ("https://ntnu.box.com/shared/static/cgjbsfs24m31uov6ir4vkkmw6cs7ga36.txt")
+cleaned_occurrences <- ("https://ntnu.box.com/shared/static/cgjbsfs24m31uov6ir4vkkmw6cs7ga36.txt")
 norway_corine <- ("https://ntnu.box.com/shared/static/s406n4td0cmtfjsxwllz8klnkvksiyul.tif")
 
 #Download the file
-download.file(occurrences, "occurrence.txt")
+download.file(cleaned_occurrences, "cleaned_occurrences.txt")
 download.file(norway_corine, "corine_modified_classes_stack.tif")
 
 ## 1.2. Read in the data ----
