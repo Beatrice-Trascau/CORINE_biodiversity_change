@@ -312,66 +312,37 @@ plot(peatbogs_trondelag, axes = FALSE)
  #this will only be done for the Norway stack, as this is the one that will be used for analysis
 
 ## 3.1. Change land cover class values ----
-#Discontinuous urban fabric (changed from 2 to 20)
+#Urban Fabric
  #all the urban classes are pooled together, due to their sparse distribution across Norway
 norway_corine_modified <- app(norway_corine,
                               fun = function(x){x[x %in% c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)] <- 1; return(x)})
 
-#Non-irrigated arable land
+#Complex agricultural patterns
 norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x == 12] <- 250; return(x)})
-
-#Pastures
-norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x == 18] <- 380; return(x)})
-
-#Complex cultivation patterns
-norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x == 20] <- 590; return(x)})
+                              fun = function(x){x[x %in% c(12, 18, 20)] <- 80; return(x)})
 
 #Agriculture and significant natural vegetation
 norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x == 21] <- 711; return(x)})
+                              fun = function(x){x[x == 21] <- 103; return(x)})
 
-#Broad-leaved forest
+#Forests
 norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x == 23] <- 859; return(x)})
+                              fun = function(x){x[x %in% c(23, 24, 25)] <- 250; return(x)})
 
-#Coniferous forest
+#Moors, Heathland & Natural Grassland
 norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x == 24] <- 1033; return(x)})
-
-#Mixed forest
-norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x == 25] <- 1377; return(x)})
-
-#Natural grasslands
-norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x == 26] <- 2020; return(x)})
-
-#Moors and heathland
-norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x == 27] <- 3000; return(x)})
-
+                              fun = function(x){x[x %in% c(26, 27)] <- 380; return(x)})
 #Transitional woodland shrub
 norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x == 29] <- 4500; return(x)})
-
-#Bare rock
-norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x == 31] <- 7111; return(x)})
+                              fun = function(x){x[x == 29] <- 590; return(x)})
 
 #Sparsely vegetated areas
 norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x == 32] <- 9999; return(x)})
-
-#Inland marshes & Peat bogs
-norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x %in% c(35, 36)] <- 108700; return(x)})
+                              fun = function(x){x[x == 32] <- 711; return(x)})
 
 #Other classes
 norway_corine_modified <- app(norway_corine_modified,
-                              fun = function(x){x[x %in% c(3, 5, 6, 7, 8, 9, 11, 30, 33, 34, 39, 40, 41, 43, 44, 128)] <- NA; return(x)})
+                              fun = function(x){x[x %in% c(30, 31, 33, 34, 35, 36, 39, 40, 41, 43, 44)] <- NA; return(x)})
 ## 3.2. Save the modified corine stack ----
 #New name for the raster stack
 rater_name <- paste0("corine_modified_classes_stack.tif")
