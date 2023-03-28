@@ -20,13 +20,12 @@ library(networkD3)
 
 ## 1.1. Download the modified CORINE stack and df with transition score meaning from Box ----
 
-#Add download link for CORINE stack with modified layers and Dataframe of the meaning of land cover transitions (i.e. the meaning of the difference between yearly layers)
+#Add download link for CORINE stack with modified layers
 norway_corine <- ("https://ntnu.box.com/shared/static/s406n4td0cmtfjsxwllz8klnkvksiyul.tif")
-corine_class_meaning <- ("https://ntnu.box.com/shared/static/v8s7wddhhdcm8gi21vudunygn0jkdt9v.csv")
 
-#Download the files
+#Download the file
 download.file(norway_corine, "corine_modified_classes_stack.tif")
-download.file(corine_class_meaning, "land_cover_transition_scores.csv")
+
 
 ## 1.2. Read the layers stack and meaning dataframe ----
 norway_corine <- rast("corine_modified_classes_stack.tif")
@@ -44,7 +43,31 @@ corine_2000_2006_df <- as.data.frame(freq(norway_corine[[1]] -
          difference = value) |>
   select(-layer)
 
-## 2.2. Get values for source and target land cover in the change layer from the score meaning data frame ----
+## 2.2. Create score meaning data frame ----
+#Create vectors for each column
+source_number <- c(rep(1,7), rep(80,7), rep(103,7),
+                   rep(250,7), rep(380,7), rep(590,7),
+                   rep(711,7))
+
+source_name <- c(rep("urban.fabric",7), rep("complex.agriculture",7), 
+                 rep("agriculture.and.vegetation",7), rep("forests",7), 
+                 rep("moors.heath.grass",7), rep("transitional.woodland",7),
+                 rep("sparse.vegetation",7))
+
+target_number <- c(rep(c(1,80,103,250,380,590,711), 7))
+
+target_name <- c(rep(c("urban.fabric", "complex.agriculture", "agriculture.and.vegetation",
+                       "forests", "moors.heath.grass", "transitional.woodland",
+                       "sparse.vegetation"), 7))
+
+#Combine vectors in df
+corine_class_meaning <- data.frame(source_number, source_name,
+                                   target_number, target_name)
+
+corine_class_meaning <- corine_class_meaning |>
+  mutate(difference = source_number - target_number)
+
+## 2.3. Get values for source and target land cover in the change layer from the score meaning data frame ----
 #Subset score meaning df to only contain the "differences" which are found across Norway
 norway_corine_class_meaning <- corine_class_meaning |>
   filter(Difference %in% corine_2000_2006_df$value)
@@ -60,7 +83,7 @@ corine_2000_2006_change_meaning <- merge(corine_2000_2006_df,
                                          norway_corine_class_meaning,
                                          by = "value")
 
-## 2.3. Prepare df for sankey plot ----
+## 2.4. Prepare df for sankey plot ----
 #Merge columns "source_year" with "source_name" and "target_year" with "target_name" so that we can differentiate the transitions
 corine_2000_2006_sankey <- corine_2000_2006_change_meaning |>
   unite(source, c(source_year, source_name), sep = ".",
@@ -84,8 +107,8 @@ corine_2000_2006_sankey <- corine_2000_2006_sankey |>
 corine_2000_2006_sankey <- corine_2000_2006_sankey |>
   mutate(target = paste(target, " ", sep = ""))
 
-## 2.4. Sankey Plot for transitions between 2000 and 2006 ----
-### 2.4.1. Sankey Plot for transitions between 2000 and 2006 (all classes included) ----
+## 2.5. Sankey Plot for transitions between 2000 and 2006 ----
+### 2.5.1. Sankey Plot for transitions between 2000 and 2006 (all classes included) ----
 #Create node dataframe
 nodes2000_2006 <- data.frame(name = c(as.character(corine_2000_2006_sankey$source),
                                       as.character(corine_2000_2006_sankey$target)) |>
@@ -105,7 +128,7 @@ sankeyNetwork(Links = corine_2000_2006_sankey, Nodes = nodes2000_2006,
               Value = "count", NodeID = "name", 
               colourScale=ColourScal, nodeWidth=40, fontSize=11, nodePadding=20)
 
-### 2.4.2. Sankey Plot for transitions between 2000 and 2006 (excluding coniferous forest to transitional woodland shrub) ----
+### 2.5.2. Sankey Plot for transitions between 2000 and 2006 (excluding coniferous forest to transitional woodland shrub) ----
 #The transitions conigerous forest -> transitional woodland shrub (and vice versa) were removed to allow better visualisation of the other transitions (which are not dominant)
 #Remove rows 19 and 78
 forestless_2000_2006_sankey <- corine_2000_2006_sankey |>
@@ -132,8 +155,8 @@ sankeyNetwork(Links = forestless_2000_2006_sankey, Nodes = nodes_forestless,
               Value = "count", NodeID = "name", 
               colourScale=ColourScal, nodeWidth=20, fontSize=11, nodePadding=25)
 
-## 2.5. Barplots of land cover transitions between 2000 and 2006 ----
-### 2.5.1. Barplots of land cover transitions between 2000 and 2006 (all classes) ----
+## 2.6. Barplots of land cover transitions between 2000 and 2006 ----
+### 2.6.1. Barplots of land cover transitions between 2000 and 2006 (all classes) ----
 #Create dataframe of "transition to" values
 #this dataframe will have the "focus" cover class in the "source" column and the cover class it transitions to in the "target" column
 #the values will be negative because for every source class, this is the area "lost" that is converted to the "target" cover class
@@ -180,7 +203,7 @@ gain_loss_plot <- gain_loss_2000_2006 |>
 gain_loss_plot + theme(axis.text.x = element_text(angle = 30,
                                                   hjust = 1))
 
-### 2.5.2. Barplots of land cover transitions between 2000 and 2006 (without coniferous and transitional woodland shrub) ----
+### 2.6.2. Barplots of land cover transitions between 2000 and 2006 (without coniferous and transitional woodland shrub) ----
 #Creat df that does not have the coniferous -> transitional woodlans shrub (and vice versa) columns
 gain_loss_2000_2006_forestless <- gain_loss_2000_2006 |>
   filter(!row_number() %in% c(19, 78, 121, 180))
