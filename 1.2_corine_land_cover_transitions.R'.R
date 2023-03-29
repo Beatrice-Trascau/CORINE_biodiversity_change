@@ -10,6 +10,7 @@
 
 # 0. LOAD PACKAGES ----
 library(here)
+library(terra)
 library(tidyverse)
 library(dplyr)
 library(ggplot2)
@@ -21,16 +22,14 @@ library(networkD3)
 ## 1.1. Download the modified CORINE stack and df with transition score meaning from Box ----
 
 #Add download link for CORINE stack with modified layers
-norway_corine <- ("https://ntnu.box.com/shared/static/s406n4td0cmtfjsxwllz8klnkvksiyul.tif")
+norway_corine <- ("https://ntnu.box.com/shared/static/ugwtizqcr3a4t4vgxj6qu0rh0h54rtoh.tif")
 
 #Download the file
 download.file(norway_corine, "corine_modified_classes_stack.tif")
 
 
-## 1.2. Read the layers stack and meaning dataframe ----
+## 1.2. Read the layers stack ----
 norway_corine <- rast("corine_modified_classes_stack.tif")
-corine_class_meaning <- read.csv("land_cover_transition_scores.csv",
-                                 header = T, sep = ";")
 
 # 2. LAND COVER TRANSITIONS BETWEEN 2000 AND 2006 ----
 
@@ -70,7 +69,7 @@ corine_class_meaning <- corine_class_meaning |>
 ## 2.3. Get values for source and target land cover in the change layer from the score meaning data frame ----
 #Subset score meaning df to only contain the "differences" which are found across Norway
 norway_corine_class_meaning <- corine_class_meaning |>
-  filter(Difference %in% corine_2000_2006_df$value)
+  filter(difference %in% corine_2000_2006_df$value)
 
 #Change column names
 colnames(norway_corine_class_meaning) <- c("source_number", "source_name",
@@ -130,9 +129,9 @@ sankeyNetwork(Links = corine_2000_2006_sankey, Nodes = nodes2000_2006,
 
 ### 2.5.2. Sankey Plot for transitions between 2000 and 2006 (excluding coniferous forest to transitional woodland shrub) ----
 #The transitions conigerous forest -> transitional woodland shrub (and vice versa) were removed to allow better visualisation of the other transitions (which are not dominant)
-#Remove rows 19 and 78
+#Remove rows 3 and 26
 forestless_2000_2006_sankey <- corine_2000_2006_sankey |>
-  filter(!row_number() %in% c(19, 78))
+  filter(!row_number() %in% c(3, 26))
 
 #Colour scale
 ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
@@ -193,11 +192,8 @@ gain_loss_plot <- gain_loss_2000_2006 |>
        y = bquote("Area changes"~("km"^2)),
        title = "Land Cover Transitions 2000 - 2006")+
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
-                                            "#6A3D9A", "#FF7F00", 
-                                            "black", "gold1",
-                                            "skyblue2", "#FB9A99",
-                                            "palegreen2","#CAB2D6",
-                                            "#FDBF6F","gray70", "maroon"))+
+                                            "#6A3D9A", "#FF7F00",
+                                            "gold1","maroon"))+
                                               theme_classic()
 #Change x axis ticks
 gain_loss_plot + theme(axis.text.x = element_text(angle = 30,
@@ -206,7 +202,7 @@ gain_loss_plot + theme(axis.text.x = element_text(angle = 30,
 ### 2.6.2. Barplots of land cover transitions between 2000 and 2006 (without coniferous and transitional woodland shrub) ----
 #Creat df that does not have the coniferous -> transitional woodlans shrub (and vice versa) columns
 gain_loss_2000_2006_forestless <- gain_loss_2000_2006 |>
-  filter(!row_number() %in% c(19, 78, 121, 180))
+  filter(!row_number() %in% c(3, 26, 36, 59))
 
 #Plot gain_loss_2000_2006
 gain_loss_plot_forestless <- gain_loss_2000_2006_forestless |>
@@ -220,11 +216,8 @@ gain_loss_plot_forestless <- gain_loss_2000_2006_forestless |>
        y = bquote("Area changes"~("km"^2)),
        title = "Land Cover Transitions 2000 - 2006")+
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
-                                            "#6A3D9A", "#FF7F00", 
-                                            "black", "gold1",
-                                            "skyblue2", "#FB9A99",
-                                            "palegreen2","#CAB2D6",
-                                            "#FDBF6F","gray70", "maroon"))+
+                                            "#6A3D9A", "#FF7F00",
+                                            "gold1","maroon"))+
                                               theme_classic()
 #Change x axis ticks
 gain_loss_plot_forestless + theme(axis.text.x = element_text(angle = 30,
@@ -244,7 +237,7 @@ corine_2006_2012_df <- as.data.frame(freq(norway_corine[[2]] -
 ## 3.2. Get values for source and target land cover in the change layer from the score meaning data frame ----
 #Subset score meaning df to only contain the "differences" which are found across Norway
 norway_corine_class_meaning_2006_2012 <- corine_class_meaning |>
-  filter(Difference %in% corine_2006_2012_df$value)
+  filter(difference %in% corine_2006_2012_df$value)
 
 colnames(norway_corine_class_meaning_2006_2012) <- c("source_number", "source_name",
                                                      "target_number", "target_name",
@@ -304,7 +297,7 @@ sankeyNetwork(Links = corine_2006_2012_sankey, Nodes = nodes2006_2012,
 ### 3.4.2. Sankey Plot for transitions between 2006 and 2012 (excluding coniferous forest to transitional woodland shrub) ----
 #Remove rows 25 and 90
 forestless_2006_2012_sankey <- corine_2006_2012_sankey |>
-  filter(!row_number() %in% c(25, 90))
+  filter(!row_number() %in% c(6, 29))
 
 #Colour scale
 ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
@@ -366,10 +359,7 @@ gain_loss_plot_2006_2012 <- gain_loss_2006_2012 |>
        title = "Land Cover Transitions 2006 - 2012")+
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
                                             "#6A3D9A", "#FF7F00", 
-                                            "black", "gold1",
-                                            "skyblue2", "#FB9A99",
-                                            "palegreen2","#CAB2D6",
-                                            "#FDBF6F","gray70", "maroon"))+
+                                            "gold1", "maroon"))+
                                               theme_classic()
 #Change x axis tick marks
 gain_loss_plot_2006_2012 + theme(axis.text.x = element_text(angle = 30,
@@ -378,7 +368,7 @@ gain_loss_plot_2006_2012 + theme(axis.text.x = element_text(angle = 30,
 ### 3.5.2. Barplots of land cover transitions between 2006 and 2012 (without coniferous and transitional woodland shrub) ----
 #Creat df that does not have the coniferous -> transitional woodlans shrub (and vice versa) columns
 gain_loss_2006_2012_forestless <- gain_loss_2006_2012 |>
-  filter(!row_number() %in% c(25, 90, 136, 201))
+  filter(!row_number() %in% c(6, 29, 43, 66))
 
 #Plot gain_loss_2006_2012
 gain_loss_plot_forestless_2006_2012 <- gain_loss_2006_2012_forestless |>
@@ -393,10 +383,7 @@ gain_loss_plot_forestless_2006_2012 <- gain_loss_2006_2012_forestless |>
        title = "Land Cover Transitions 2006 - 2012")+
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
                                             "#6A3D9A", "#FF7F00", 
-                                            "black", "gold1",
-                                            "skyblue2", "#FB9A99",
-                                            "palegreen2","#CAB2D6",
-                                            "#FDBF6F","gray70", "maroon"))+
+                                            "gold1", "maroon"))+
                                               theme_classic()
 #Change x axis tick marks
 gain_loss_plot_forestless_2006_2012 + theme(axis.text.x = element_text(angle = 30,
@@ -415,7 +402,7 @@ corine_2012_2018_df <- as.data.frame(freq(norway_corine[[3]] -
 ## 4.2. Get values for source and target land cover in the change layer from the score meaning data frame ----
 #Subset score meaning df to only contain the "differences" which are found across Norway
 norway_corine_class_meaning_2012_2018 <- corine_class_meaning |>
-  filter(Difference %in% corine_2012_2018_df$value)
+  filter(difference %in% corine_2012_2018_df$value)
 
 colnames(norway_corine_class_meaning_2012_2018) <- c("source_number", "source_name",
                                                      "target_number", "target_name",
@@ -475,7 +462,7 @@ sankeyNetwork(Links = corine_2012_2018_sankey, Nodes = nodes2012_2018,
 ### 4.4.2. Sankey Plot for transitions between 2012 and 2018 (excluding coniferous forest to transitional woodland shrub) ----
 #Remove rows 16 and 76
 forestless_2012_2018_sankey <- corine_2012_2018_sankey |>
-  filter(!row_number() %in% c(16, 76))
+  filter(!row_number() %in% c(4, 26))
 
 #Colour scale
 ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
@@ -531,16 +518,13 @@ gain_loss_plot_2012_2018 <- gain_loss_2012_2018 |>
              x = focus))+
   geom_bar(position = "stack",
            stat = "identity")+
-  labs(fill = "Land Cover Classes",
+  labs(fill = "Land Chttp://127.0.0.1:18341/graphics/plot_zoom_png?width=1536&height=814over Classes",
        x = "Land cover classes",
        y = bquote("Area changes"~("km"^2)),
        title = "Land Cover Transitions 2012 - 2018")+
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
                                             "#6A3D9A", "#FF7F00", 
-                                            "black", "gold1",
-                                            "skyblue2", "#FB9A99",
-                                            "palegreen2","#CAB2D6",
-                                            "#FDBF6F","gray70", "maroon"))+
+                                            "gold1", "maroon"))+
                                               theme_classic()
 #Change x axis tick marks
 gain_loss_plot_2012_2018 + theme(axis.text.x = element_text(angle = 30,
@@ -549,7 +533,7 @@ gain_loss_plot_2012_2018 + theme(axis.text.x = element_text(angle = 30,
 ### 4.5.2. Barplots of land cover transitions between 2012 and 2018 (without coniferous and transitional woodland shrub) ----
 #Creat df that does not have the coniferous -> transitional woodlans shrub (and vice versa) columns
 gain_loss_2012_2018_forestless <- gain_loss_2012_2018 |>
-  filter(!row_number() %in% c(16, 76, 112, 172))
+  filter(!row_number() %in% c(4, 26, 38, 60))
 
 #Plot gain_loss_2012_2018
 gain_loss_plot_forestless_2012_2018 <- gain_loss_2012_2018_forestless |>
@@ -564,10 +548,7 @@ gain_loss_plot_forestless_2012_2018 <- gain_loss_2012_2018_forestless |>
        title = "Land Cover Transitions 2012 - 2018")+
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
                                             "#6A3D9A", "#FF7F00", 
-                                            "black", "gold1",
-                                            "skyblue2", "#FB9A99",
-                                            "palegreen2","#CAB2D6",
-                                            "#FDBF6F","gray70", "maroon"))+
+                                            "gold1", "maroon"))+
                                               theme_classic()
 
 gain_loss_plot_forestless_2012_2018 + theme(axis.text.x = element_text(angle = 30,
@@ -586,7 +567,7 @@ corine_2000_2018_df <- as.data.frame(freq(norway_corine[[1]] -
 ## 5.2. Get values for source and target land cover in the change layer from the score meaning data frame ----
 #Subset score meaning df to only contain the "differences" which are found across Norway
 norway_corine_class_meaning_2000_2018 <- corine_class_meaning |>
-  filter(Difference %in% corine_2000_2018_df$value)
+  filter(difference %in% corine_2000_2018_df$value)
 
 colnames(norway_corine_class_meaning_2000_2018) <- c("source_number", "source_name",
                                                      "target_number", "target_name",
@@ -646,7 +627,7 @@ sankeyNetwork(Links = corine_2000_2018_sankey, Nodes = nodes2000_2018,
 ### 5.4.2. Sankey Plot for transitions between 2006 and 2012 (excluding coniferous forest to transitional woodland shrub) ----
 #Remove rows 27 and 99
 forestless_2000_2018_sankey <- corine_2000_2018_sankey |>
-  filter(!row_number() %in% c(27, 99))
+  filter(!row_number() %in% c(6, 29))
 
 #Colour scale
 ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
@@ -708,10 +689,7 @@ gain_loss_plot_2000_2018 <- gain_loss_2000_2018 |>
        title = "Land Cover Transitions 2000 - 2018")+
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
                                             "#6A3D9A", "#FF7F00", 
-                                            "black", "gold1",
-                                            "skyblue2", "#FB9A99",
-                                            "palegreen2","#CAB2D6",
-                                            "#FDBF6F","gray70", "maroon"))+
+                                            "gold1", "maroon"))+
                                               theme_classic()
 #Change x axis tick marks
 gain_loss_plot_2000_2018 + theme(axis.text.x = element_text(angle = 30,
@@ -720,7 +698,7 @@ gain_loss_plot_2000_2018 + theme(axis.text.x = element_text(angle = 30,
 ### 5.5.2. Barplots of land cover transitions between 2000 and 2018 (without coniferous and transitional woodland shrub) ----
 #Remove the rows with transition coniferous forest - transitional woodland shrub and vice versa
 gain_loss_2000_2018_forestless <- gain_loss_2000_2018 |>
-  filter(!row_number() %in% c(27, 99, 150, 222))
+  filter(!row_number() %in% c(6, 29, 43, 66))
 
 #Plot gain_loss_2000_2018
 gain_loss_plot_forestless_2000_2018 <- gain_loss_2000_2018_forestless |>
@@ -735,10 +713,7 @@ gain_loss_plot_forestless_2000_2018 <- gain_loss_2000_2018_forestless |>
        title = "Land Cover Transitions 2000 - 2018")+
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
                                             "#6A3D9A", "#FF7F00", 
-                                            "black", "gold1",
-                                            "skyblue2", "#FB9A99",
-                                            "palegreen2","#CAB2D6",
-                                            "#FDBF6F","gray70", "maroon"))+
+                                            "gold1", "maroon"))+
                                               theme_classic()
 #Change x axis tick marks
 gain_loss_plot_forestless_2000_2018 + theme(axis.text.x = element_text(angle = 30,
