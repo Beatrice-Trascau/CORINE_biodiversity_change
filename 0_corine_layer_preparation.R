@@ -56,7 +56,7 @@ crs(norway, proj = TRUE) #"+proj=longlat +datum=WGS84 +no_defs"
 crs(corine_2018, proj = TRUE) #"+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
 
 #Reproject Norway shapefile to the CORINE layers
-norway_corine_projection <- project(norway, crs(corine_2018))
+norway_corine_projection <- project(norway, crs(corine_stack))
 #check projection
 crs(norway_corine_projection, proj = TRUE) #projection correct now
 
@@ -98,7 +98,7 @@ crs(trondelag, proj = TRUE) #"+proj=longlat +datum=WGS84 +no_defs"
 crs(corine_2018, proj = TRUE) #"+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
 
 #Reproject Norway shapefile to the CORINE layers
-trondelag_corine_projection <- project(trondelag, crs(corine_2018))
+trondelag_corine_projection <- project(trondelag, crs(corine_stack))
  #check projection
 crs(trondelag_corine_projection, proj = TRUE) #projection correct now
 
