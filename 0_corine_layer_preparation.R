@@ -65,7 +65,13 @@ crs(norway_corine_projection, proj = TRUE) #projection correct now
 norway_corine_stack <- crop(corine_stack, norway_corine_projection,
                             mask = TRUE)
 
-## 3.4. Save the cropped layers ----
+## 3.4. Change extent of CORINE stack to match the extent of the Norway shapefile ----
+#Get the extent of the Norway shapefile
+ext(norway)
+
+ext(norway_corine_stack) <- c(3.904688, 31.16198, 57.95903, 71.18125)
+
+## 3.5. Save the cropped layers ----
 
 #Write file name
 raster_name <- paste0("norway_corine_stack.tif")
