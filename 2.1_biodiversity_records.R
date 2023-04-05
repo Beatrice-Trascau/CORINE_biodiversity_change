@@ -48,6 +48,11 @@ clean_occurrences_norway <- subset(clean_occurrences_norway, kingdom!="Bacteria"
 #Remove records with no registered species-level information
 clean_occurrences_norway <- clean_occurrences_norway[!clean_occurrences_norway$specificEpithet=="",]
 
+#Remove duplicate records
+clean_occurrences_norway_try <- clean_occurrences_norway |>
+  distinct()
+
+
 ## 2.2 Clean coordinates ----
 #Remove records without coorinates
 clean_occurrences_norway <- clean_occurrences_norway |>
