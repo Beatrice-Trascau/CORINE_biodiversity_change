@@ -31,7 +31,7 @@ download.file(cleaned_occurrences, "cleaned_occurrences.txt")
 download.file(norway_corine, "corine_modified_classes_stack.tif")
 
 ## 1.2. Read in the data ----
-occurrences_norway <- fread("occurrence.txt")
+clean_occurrences <- fread("cleaned_occurrences.txt")
 norway_corine <- rast("corine_modified_classes_stack.tif")
 
 # 2. OCCURRENCE RECORDS AS SPATVECT ----
