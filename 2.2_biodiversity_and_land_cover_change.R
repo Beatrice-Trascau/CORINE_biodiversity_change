@@ -51,7 +51,7 @@ for(i in c("2000.2005", "2006.2011", "2012.2018")){
   assign(new_name, occurrences[[i]])
 }
 
-## 2.2. Convert yearly occurrence records to spatial points
+## 2.2. Convert yearly occurrence records to SpatVector
 
 #Define the vectors you want to have in the loop beforehand as empty vectors
 long <- c()
@@ -65,8 +65,9 @@ for (i in 1:3) {
   lat[[i]] <- occurrences[[i]]$decimalLatitude
   #Combine lat and long  vectors into 1 df
   points[[i]] <- cbind(long[[i]], lat[[i]])
-  #Convert to spatial points
+  #Convert to SpatVector
   points_occurrence[[i]] <- terra::vect(points[[i]])
+  #Define the crs for the spatial points
   #Create a name vector to store the names of the spatial points data frames created
   new_name <- paste0("points_period", i)
   #Store object "points" under the name "new_name" in the global environment
