@@ -11,7 +11,6 @@
 # 0. LOAD PACKAGES ----
 library(here)
 library(data.table)
-library(CoordinateCleaner)
 library(terra)
 library(sf)
 library(tidyverse)
