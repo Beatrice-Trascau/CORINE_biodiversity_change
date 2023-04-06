@@ -55,22 +55,24 @@ for(i in c("2000.2005", "2006.2011", "2012.2018")){
 #Define the vectors you want to have in the loop beforehand as empty vectors
 long <- c()
 lat <- c()
-points <- list()
-points_occurrence <- list()
+spatial <- list()
+spatial_occurrence <- list()
 
+#Loop to convert yearly occurrence records to SpatVector
 for (i in 1:3) {
   #Extract latitude and longitude into vectors
   long[[i]] <- occurrences[[i]]$decimalLongitude
   lat[[i]] <- occurrences[[i]]$decimalLatitude
   #Combine lat and long  vectors into 1 df
-  points[[i]] <- cbind(long[[i]], lat[[i]])
+  spatial[[i]] <- cbind(long[[i]], lat[[i]])
   #Convert to SpatVector
-  points_occurrence[[i]] <- terra::vect(points[[i]])
-  #Define the crs for the spatial points
+  spatial_occurrence[[i]] <- terra::vect(spatial[[i]])
+  #Define the CRS for the SpatVector
+  crs(spatial_occurrence[[i]])  <- "epsg:3035"
   #Create a name vector to store the names of the spatial points data frames created
-  new_name <- paste0("points_period", i)
+  new_name <- paste0("spatial_occurrence", i)
   #Store object "points" under the name "new_name" in the global environment
-  assign(new_name, points_occurrence[[i]])
+  assign(new_name, spatial_occurrence[[i]])
 }
 
 # 3. COMBINE OCCURRENCE RECORDS AND LAND COVER CHANGE LAYERS ----
@@ -85,38 +87,45 @@ norway_land_cover_change <- c(norway_corine[[1]] - norway_corine[[2]],
                               norway_corine[[3]] - norway_corine[[4]])
 
 ## 3.2. Calculate number of occurrences in each land-cover pixel/year ----
-#List of SpatialPoints elements for all years
-points
+### 3.2.1. Use rasterize function to extract number of occurrence records in each pixel for 2000 to 2006 period ----
+#Rasterize
+occurrence_land_cover_2000.2006 <- terra::rasterize(spatial_occurrence1,
+                                                    norway_land_cover_change[[1]],
+                                                    fun = sum)
+#Convert to dataframe
+occurrence_land_cover_2000.2006_df <- as.data.frame(occurrence_land_cover_2000.2006$U2006_CLC2000_V2020_20u1,
+                                                    xy = TRUE)
 
-#List of all land cover change layers
-norway_land_cover_change
+### 3.2.2. Use rasterize function to extract number of occurrence records in each pixel for 2006 to 2012 period ----
+#Rasterize
+occurrence_land_cover_2006.2012 <- terra::rasterize(spatial_occurrence2,
+                                                    norway_land_cover_change[[2]],
+                                                    fun = sum)
+#Convert to dataframe
+occurrence_land_cover_2006.2012_df <- as.data.frame(occurrence_land_cover_2006.2012$U2012_CLC2006_V2020_20u1,
+                                                    xy = TRUE)
 
-#Create an empty list to save the output of the rasterize function
-occurrence_land_cover_overlap <- list()
+### 3.2.3. Use rasterize function to extract number of occurrence records in each pixel for 2012 to 2018 period ----
+#Rasterize
+occurrence_land_cover_2012.2018 <- terra::rasterize(spatial_occurrence3,
+                                                    norway_land_cover_change[[3]],
+                                                    fun = sum)
+#Convert to dataframe
+occurrence_land_cover_2012.2018_df <- as.data.frame(occurrence_land_cover_2012.2018$U2018_CLC2012_V2020_20u1,
+                                                    xy = TRUE)
 
-#Create an empty list to save dfs of the rasterize functions
-occurrence_land_cover_overlap_dfs <- list()
+## 3.3. Put all rasterize outputs (SpatRasters and DataFrames) in lists for use below ----
+#Number of occurrence records in land cover pixels as SpatRaster
+occurrence_land_cover_overlap <- list(occurrence_land_cover_2000.2006,
+                                      occurrence_land_cover_2006.2012,
+                                      occurrence_land_cover_2012.2018)
 
-#Use rasterize function to extract number of occurrence records in each pixels for every land cover survey period (i.e. 2000-2006, 2006-2012, 2012-2018)
-for (i in 1:3) {
-  #Rasterize overlap between occurrence SpatialPoints and land-cover change layers
-  occurrence_land_cover_overlap[[i]] <- terra::rasterize(points_occurrence[[i]],
-                                                         norway_land_cover_change[[i]],
-                                                         fun = sum)
-  #Convert to dataframe
-  occurrence_land_cover_overlap_dfs[[i]] <- as.data.frame(occurrence_land_cover_overlap[[i]]$layer,
-                                                          xy = TRUE)
-  #Create a name vector to store the names of the rasterize output
-  new_name <- paste0("occurrence_land_cover_overlap_period", i)
-  #Create a name vector to store the names of the dfs from the rasterize output
-  new_name_dfs <- paste0("occurrence_land_cover_overlap_df_period", i)
-  #Store rasterize output under the new_name in the global environment
-  assign(new_name, occurrence_land_cover_overlap[[i]])
-  #Store rasterize output under the new_name_dfs in the global environment
-  assign(new_name_dfs, occurrence_land_cover_overlap_dfs[[i]])
-}
+#Number of occurrence records in land cover pixels as df
+occurrence_land_cover_overlap_dfs <- list(occurrence_land_cover_2000.2006_df,
+                                          occurrence_land_cover_2006.2012_df,
+                                          occurrence_land_cover_2012.2018_df)
 
-## 3.3. Merge all dfs of occurrence_land_cover_overlap with land_cover change_dfs ----
+## 3.4. Merge all dfs of occurrence_land_cover_overlap with land_cover change_dfs ----
 #List of land_cover_change_dfs
 land_cover_change_df_list <- list(as.data.frame(norway_corine[[1]] - norway_corine[[2]]),
                                   as.data.frame(norway_corine[[2]] - norway_corine[[3]]),
@@ -137,7 +146,7 @@ for(i in 1: length(occurrence_land_cover_overlap_dfs)){
   assign(new_name, merged_occurrences_in_land_cover[[i]])
 }
 
-## 3.4.  Create df of occurrences in land cover for all time periods----
+## 3.5.  Create df of occurrences in land cover for all time periods----
 #Merge all merged_occurrences_in_land_cover into a single df
 all_periods_occurrence_in_land_cover <- bind_rows(merged_occurrences_in_land_cover_period1,
                                                   merged_occurrences_in_land_cover_period2,
