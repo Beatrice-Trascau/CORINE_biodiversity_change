@@ -110,9 +110,3 @@ terra::writeRaster(trondelag_corine_stack,
                    here("data", "rondelag_corine_stack.tif"))
 
 #END OF SCRIPT ----
-
-
-#hdahgaiugyjhakj
-
-
-
