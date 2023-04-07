@@ -65,10 +65,12 @@ for (i in 1:3) {
   lat[[i]] <- occurrences[[i]]$decimalLatitude
   #Combine lat and long  vectors into 1 df
   spatial[[i]] <- cbind(long[[i]], lat[[i]])
-  #Convert to SpatVector
-  spatial_occurrence[[i]] <- terra::vect(spatial[[i]])
-  #Define the CRS for the SpatVector
-  crs(spatial_occurrence[[i]])  <- "epsg:3035"
+  #Convert to SpatVector; make sure to define a crs
+  spatial_occurrence[[i]] <- terra::vect(spatial[[i]],
+                                         crs = "+proj=longlat")
+  #Project SpatVectors to EPSG:3035
+  spatial_occurrence[[i]] <- terra::project(spatial_occurrence[[i]],
+                                            "epsg:3035")
   #Create a name vector to store the names of the spatial points data frames created
   new_name <- paste0("spatial_occurrence", i)
   #Store object "points" under the name "new_name" in the global environment
@@ -78,9 +80,9 @@ for (i in 1:3) {
 # 3. COMBINE OCCURRENCE RECORDS AND LAND COVER CHANGE LAYERS ----
 
 ## 3.1. Create a stack of land cover change layers ----
-#2000-2006 = norway_corine[[1]] - norway_corine[[2]]
-#2006-2012 = norway_corine[[2]] - norway_corine[[3]]
-#2012-2018 = norway_corine[[3]] - norway_corine[[4]]
+#Period1 = 2000-2006 = norway_corine[[1]] - norway_corine[[2]]
+#Period2 = 2006-2012 = norway_corine[[2]] - norway_corine[[3]]
+#Period3 = 2012-2018 = norway_corine[[3]] - norway_corine[[4]]
 
 norway_land_cover_change <- c(norway_corine[[1]] - norway_corine[[2]],
                               norway_corine[[2]] - norway_corine[[3]],
@@ -127,9 +129,12 @@ occurrence_land_cover_overlap_dfs <- list(occurrence_land_cover_2000.2006_df,
 
 ## 3.4. Merge all dfs of occurrence_land_cover_overlap with land_cover change_dfs ----
 #List of land_cover_change_dfs
-land_cover_change_df_list <- list(as.data.frame(norway_corine[[1]] - norway_corine[[2]]),
-                                  as.data.frame(norway_corine[[2]] - norway_corine[[3]]),
-                                  as.data.frame(norway_corine[[3]] - norway_corine[[4]]))
+land_cover_change_df_list <- list(as.data.frame(norway_corine[[1]] - norway_corine[[2]],
+                                                xy = TRUE),
+                                  as.data.frame(norway_corine[[2]] - norway_corine[[3]],
+                                                xy = TRUE),
+                                  as.data.frame(norway_corine[[3]] - norway_corine[[4]],
+                                                xy = TRUE))
 
 #Empty list to save the merged dfs
 merged_occurrences_in_land_cover <- list()
@@ -147,29 +152,224 @@ for(i in 1: length(occurrence_land_cover_overlap_dfs)){
 }
 
 ## 3.5.  Create df of occurrences in land cover for all time periods----
+#Change column names of the merged_occurrences_in_land_cover dataframes
+colnames(merged_occurrences_in_land_cover_period1) <- c("lat", "long", 
+                                                        "pixel_status", 
+                                                        "occurrence_count")
+
+colnames(merged_occurrences_in_land_cover_period2) <- c("lat", "long", 
+                                                        "pixel_status", 
+                                                        "occurrence_count")
+
+colnames(merged_occurrences_in_land_cover_period3) <- c("lat", "long", 
+                                                        "pixel_status", 
+                                                        "occurrence_count")
+
+#Create new column with period for each dataframe (to differentiate later)
+merged_occurrences_in_land_cover_period1 <- merged_occurrences_in_land_cover_period1 |>
+  mutate(period = "2000.2006")
+
+merged_occurrences_in_land_cover_period2 <- merged_occurrences_in_land_cover_period2 |>
+  mutate(period = "2006.2012")
+
+merged_occurrences_in_land_cover_period3 <- merged_occurrences_in_land_cover_period3 |>
+  mutate(period = "2012.2018")
+
+
 #Merge all merged_occurrences_in_land_cover into a single df
 all_periods_occurrence_in_land_cover <- bind_rows(merged_occurrences_in_land_cover_period1,
                                                   merged_occurrences_in_land_cover_period2,
                                                   merged_occurrences_in_land_cover_period3)
 
 #Write dataframe
-write.csv(all_years_occurrence_in_land_cover, "occurrences_in_land_cover_changes.csv")
+write.csv(all_years_occurrence_in_land_cover, 
+          "occurrences_in_land_cover_changes.csv")
 
 # 4. VISUALIZE DATA ----
 
-## 4.1. Read in data & clean df (if needed) ----
+## 4.1. Compare number of occurrences between changed and constant pixels ----
+
+### 4.1.1. Read in and prepare df for analysis ----
 #Read in data
-occurrence_in_land_cover <- all_years_occurrence_in_land_cover
+occurrence_in_land_cover <- all_periods_occurrence_in_land_cover
 
-#Change column names 
+#Convert values in column pixel_status to factorial constant or changed value
 occurrence_in_land_cover <- occurrence_in_land_cover |>
-  colnames(occurrence_in_land_cover) <- c("year", "lat", "long",
-                                          "pixel_status", "occurrence_count") |>
-  #Replace NA values with 0 in col "occurrence_count"
-  mutate(occurrence_count = case_when(occurrence_count == NA ~ 0),
-         #Convert values in column pixel_status to factorial constant or changed value
-         pixel_status = case_when(pixel_status == 0 ~ "constant",  "changed"))
+  mutate(pixel_status = case_when(pixel_status == 0 ~ "constant",
+                                  pixel_status != 0 ~ "changed"))
 
+
+#Remove "pixels" which did not have any species (i.e. occurrence_count = 0)
+new_occurrence_in_land_cover <- occurrence_in_land_cover[
+  occurrence_in_land_cover$occurrence_count != 0, ]
+
+#Save the new dataframe
+write.csv(new_occurrence_in_land_cover,
+          file = "new_occurrence_in_land_cover_for_plotting.csv")
+
+
+### 4.1.2. Compare number of occurrences between changed and constant pixels ----
+ggplot(new_occurrence_in_land_cover, 
+       aes(x = pixel_status, y = occurrence_count, fill = pixel_status))+
+  geom_boxplot()+
+  scale_fill_manual(values = c("#faecb7", "#00a000"))+
+  scale_x_discrete(breaks = c("changed", "constant"),
+                   labels = c("Change", "No Change"))+
+  xlab("Land-use Status in Pixel")+
+  ylab("Number of Occurrences")+
+  theme_classic()+
+  theme(axis.title.x = element_text(size = 16),
+        axis.text.x = element_text(size = 14,
+                                   color = "#000000"),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 14,
+                                   color = "#000000"),
+        legend.position = "none")
+
+### 4.1.3. Compare number of occurrences between changed and constant pixels and years ----
+occurrences_across_years <- ggplot(occurrence_in_land_cover)+
+  geom_bar(aes(x = period, y = occurrence_count,
+               fill = pixel_status),
+           stat = "identity", 
+           position = "dodge")+
+  scale_fill_manual(name = "Land-use Status in Pixel",
+                    breaks = c("changed", "constant"),
+                    labels = c("Change", "No Change"),
+                    values = c("#ffd700", "#00a000"))+
+  xlab("Sampling Periods")+
+  ylab("Number of occurrences")+
+  theme_classic()+
+  theme(axis.title.x = element_text(size = 16),
+        axis.text.x = element_text(size = 14,
+                                   angle = 45,
+                                   color = "#000000",
+                                   hjust = 1),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 14,
+                                   color = "#000000"),
+        legend.title = element_text(size=14),
+        legend.text = element_text(size = 13.5))
+
+#Save the plot as Vector Graphics
+ggsave(occurrences_across_years, 
+       file="/export/beatrimt/occurrences_in_pixels_across_years.svg")
+
+## 4.2. Compare number of occurrences between changed pixels across periods ----
+#Subset df to only contain "changed" pixels
+occurrence_in_changed_land_cover <- occurrence_in_land_cover[
+  occurrence_in_land_cover$pixel_status != "constant", ]
+
+#Plot number of occurrences between changed pixels across periods 
+occurrences_in_changed_pixels <- ggplot(occurrence_in_changed_land_cover)+
+  geom_bar(aes(x = period, y = occurrence_count),
+           stat = "identity", 
+           position = "dodge",
+           fill = "#ffd700")+
+  xlab("Sampling Periods")+
+  ylab("Number of occurrences")+
+  theme_classic()+
+  theme(axis.title.x = element_text(size = 16),
+        axis.text.x = element_text(size = 14,
+                                   angle = 45,
+                                   color = "#000000",
+                                   hjust = 1),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 14,
+                                   color = "#000000"),
+        legend.title = element_text(size=14),
+        legend.text = element_text(size = 13.5))
+#save plot
+ggsave(occurrences_across_years, 
+       file="/export/beatrimt/occurrences_in_changed_pixels.svg")
+
+## 4.3. Compare number of occurrences between different land cover transition categories across periods ----
+
+#Read in data
+occurrence_in_land_cover_transitions <- all_periods_occurrence_in_land_cover
+
+#Convert values in column pixel_status to factorial constant or changed value
+occurrence_in_land_cover_transitions <- occurrence_in_land_cover_transitions |>
+  mutate(pixel_status = case_when(pixel_status == 0 ~ "no change",
+                                  pixel_status %in% c(-79, -102, 23, 170, 147,
+                                                      300, 277, 510, 487, 631, 608) ~ "Intensification",
+                                  pixel_status %in% c(-130, -461, 210) ~ "Deforestation",
+                                  pixel_status == -23 ~ "Extensification",
+                                  pixel_status == -340 ~ "Forestry",
+                                  pixel_status == -710 ~ "Restoration",
+                                  pixel_status == 340 ~ "Succession or Forestry",
+                                  pixel_status %in% c(-249, -379, -589, -170, -300,
+                                                      -510, -147, -277, -487, 130,
+                                                      -210, 461, 331, 121) ~ "Succession",
+                                  pixel_status %in% c(79, 102, 249, 
+                                                      379, 589, 710) ~ "Urbanisation"))
+
+
+#Remove "pixels" which did not have any species (i.e. occurrence_count = 0)
+new_occurrence_in_land_cover_transitions <- occurrence_in_land_cover_transitions[
+  occurrence_in_land_cover$occurrence_count != 0, ]
+
+#Remove "pixels" which show "no change"
+new_occurrence_in_land_cover_transitions <- new_occurrence_in_land_cover_transitions[
+  new_occurrence_in_land_cover_transitions$pixel_status != "no change", ]
+
+#Remove NAs from columns period and pixel_status
+new_occurrence_in_land_cover_transitions <- new_occurrence_in_land_cover_transitions |>
+  drop_na()
+
+#Plot number of occurrences between different land cover transition categories across periods
+occurrences_in_individual_land_cover_changes <- ggplot(new_occurrence_in_land_cover_transitions)+
+  geom_bar(aes(x = period, y = occurrence_count, fill = pixel_status),
+           stat = "identity", 
+           position = "dodge")+
+  labs(fill = "Land Cover Change",
+       x = "Sampling Periods",
+       y = "Number of occurrences")+
+  scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
+                                            "#6A3D9A", "#FF7F00", 
+                                            "gold1", "maroon"))+
+                                              theme_classic()+
+  theme(axis.title.x = element_text(size = 16),
+        axis.text.x = element_text(size = 14,
+                                   angle = 45,
+                                   color = "#000000",
+                                   hjust = 1),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 14,
+                                   color = "#000000"),
+        legend.title = element_text(size=14),
+        legend.text = element_text(size = 13.5))
+#save the plot
+ggsave(occurrences_in_individual_land_cover_changes, 
+       file="/export/beatrimt/occurrences_in_individual_land_cover_changes.svg")
+
+#Plot number of occurrences between different land cover transition categories across periods
+#but without Forestry, Succession OR Forestry, and Urbanisation
+smaller_transitions <- new_occurrence_in_land_cover_transitions[
+  new_occurrence_in_land_cover_transitions$pixel_status %in% c("Deforestation",
+                                                               "Extensification",
+                                                               "Intensification",
+                                                               "Succession"), ]
+
+ggplot(smaller_transitions)+
+  geom_bar(aes(x = period, y = occurrence_count, fill = pixel_status),
+           stat = "identity", 
+           position = "dodge")+
+  labs(fill = "Land Cover Change",
+       x = "Sampling Periods",
+       y = "Number of occurrences")+
+  scale_fill_manual(values = c("dodgerblue2", "#E31A1C",
+                                            "#6A3D9A", "#FF7F00"))+
+                                              theme_classic()+
+  theme(axis.title.x = element_text(size = 16),
+        axis.text.x = element_text(size = 14,
+                                   angle = 45,
+                                   color = "#000000",
+                                   hjust = 1),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 14,
+                                   color = "#000000"),
+        legend.title = element_text(size=14),
+        legend.text = element_text(size = 13.5))
 
 
 #Remove "pixels" which did not have any species (i.e. occurrence_count = 0)
@@ -225,3 +425,4 @@ ggplot(occurrence_in_land_cover)+
         legend.text = element_text(size = 13.5))
 
 
+# END OF SCRIPT ----
