@@ -92,3 +92,5 @@ clean_occurrences_norway <- clean_occurrences_norway |>
 
 ## 2.4. Save cleaned occurrence records df ----
 write.csv(clean_occurrences_norway, "cleaned_occurrences.txt")
+
+# END OF SCRIPT ----
