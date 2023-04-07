@@ -446,9 +446,11 @@ nodes2012_2018 <- data.frame(name = c(as.character(corine_2012_2018_sankey$sourc
                                unique())
 
 #Create ID to provide connection for networkD3
-corine_2012_2018_sankey$IDsource=match(corine_2012_2018_sankey$source, nodes2012_2018$name)-1 
+corine_2012_2018_sankey$IDsource=match(corine_2012_2018_sankey$source, 
+                                       nodes2012_2018$name)-1 
 
-corine_2012_2018_sankey$IDtarget=match(corine_2012_2018_sankey$target, nodes2012_2018$name)-1
+corine_2012_2018_sankey$IDtarget=match(corine_2012_2018_sankey$target, 
+                                       nodes2012_2018$name)-1
 
 #Prepare colour scale
 ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
