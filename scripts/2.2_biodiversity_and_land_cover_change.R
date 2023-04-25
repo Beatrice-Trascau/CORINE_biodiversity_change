@@ -99,7 +99,7 @@ occurrence_land_cover_2000.2006 <- terra::rasterize(spatial_occurrence1,
                                                     norway_land_cover_change[[1]],
                                                     fun = sum)
 #Convert to dataframe
-occurrence_land_cover_2000.2006_df <- as.data.frame(occurrence_land_cover_2000.2006$U2006_CLC2000_V2020_20u1,
+occurrence_land_cover_2000.2006_df <- as.data.frame(occurrence_land_cover_2000.2006$sum,
                                                     xy = TRUE)
 
 ### 3.2.2. Use rasterize function to extract number of occurrence records in each pixel for 2006 to 2012 period ----
@@ -108,7 +108,7 @@ occurrence_land_cover_2006.2012 <- terra::rasterize(spatial_occurrence2,
                                                     norway_land_cover_change[[2]],
                                                     fun = sum)
 #Convert to dataframe
-occurrence_land_cover_2006.2012_df <- as.data.frame(occurrence_land_cover_2006.2012$U2012_CLC2006_V2020_20u1,
+occurrence_land_cover_2006.2012_df <- as.data.frame(occurrence_land_cover_2006.2012$sum,
                                                     xy = TRUE)
 
 ### 3.2.3. Use rasterize function to extract number of occurrence records in each pixel for 2012 to 2018 period ----
@@ -117,7 +117,7 @@ occurrence_land_cover_2012.2018 <- terra::rasterize(spatial_occurrence3,
                                                     norway_land_cover_change[[3]],
                                                     fun = sum)
 #Convert to dataframe
-occurrence_land_cover_2012.2018_df <- as.data.frame(occurrence_land_cover_2012.2018$U2018_CLC2012_V2020_20u1,
+occurrence_land_cover_2012.2018_df <- as.data.frame(occurrence_land_cover_2012.2018$sum,
                                                     xy = TRUE)
 
 ## 3.3. Put all rasterize outputs (SpatRasters and DataFrames) in lists for use below ----
