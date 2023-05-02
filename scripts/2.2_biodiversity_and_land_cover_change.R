@@ -354,9 +354,7 @@ ggsave(here("figures",
 #but without Forestry, Succession OR Forestry, and Urbanisation
 smaller_transitions <- new_occurrence_in_land_cover_transitions[
   new_occurrence_in_land_cover_transitions$pixel_status %in% c("Deforestation",
-                                                               "Extensification",
-                                                               "Intensification",
-                                                               "Succession"), ]
+                                                               "Extensification"), ]
 
 ggplot(smaller_transitions)+
   geom_bar(aes(x = period, y = occurrence_count, fill = pixel_status),
@@ -365,8 +363,7 @@ ggplot(smaller_transitions)+
   labs(fill = "Land Cover Change",
        x = "Sampling Periods",
        y = "Number of occurrences")+
-  scale_fill_manual(values = c("dodgerblue2", "#E31A1C",
-                                            "#6A3D9A", "#FF7F00"))+
+  scale_fill_manual(values = c("dodgerblue2", "#E31A1C", "#FF7F00"))+
                                               theme_classic()+
   theme(axis.title.x = element_text(size = 16),
         axis.text.x = element_text(size = 14,
