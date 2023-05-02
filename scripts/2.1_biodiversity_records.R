@@ -18,7 +18,7 @@ library(CoordinateCleaner)
 ## 1.1. Download the occurrence records from box ----
 
 #Add download link
-occurrences <- ("https://ntnu.box.com/shared/static/ua75pdgoggzxo6zoxakg4les6nph2wsy.txt")
+occurrences <- ("https://ntnu.box.com/shared/static/g72mh8ew7gj4xkwi9a14cxlpm7p5v1vx.txt")
 
 #Download the file
 download.file(occurrences, "occurrence.txt")
