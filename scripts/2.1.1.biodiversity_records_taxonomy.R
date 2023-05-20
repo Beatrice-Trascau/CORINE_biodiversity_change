@@ -17,7 +17,7 @@ library(ggplot2)
 library(tidyr)
 
 # 1. LOAD SPECIES OCCURRENCE RECORDS ----
-occurrences_corine <- fread(here("data", "cleaned_occurrences.txt"))
+occurrences_corine <- fread(here::here("data", "cleaned_occurrences.txt"))
 
 # 2. SUMMARY STATISTICS ----
 ## 2.1 Most and least sampled family throughout the years ----
@@ -125,3 +125,63 @@ y <- ggplot(terrestrial_occurrences, aes(x = kingdom, y = n, fill = class))+
 y1 <- y + scale_y_continuous(labels = scales::comma)  
  
 y1 + theme(legend.position = "none")
+
+## 4.3. Fungi classes through time ----
+#Subset df to only contain fungal classes
+fungi_occurreces <- occurrences_class |>
+  filter(kingdom == "Fungi")
+
+#Plot fungal classes through time
+f <- ggplot(fungi_occurreces, aes(x = year, y = n, fill = class))+
+  geom_bar(position = "stack", stat = "identity")+
+  xlab("Year")+
+  ylab("Occurrences")+
+  theme_classic()
+
+f + theme(legend.position = "none")
+
+## 4.4. Plant classes through time ----
+#Subset df to only contain plant classes
+plant_occurreces <- occurrences_class |>
+  filter(kingdom == "Plantae")
+
+#Plot fungal classes through time
+p <- ggplot(plant_occurreces, aes(x = year, y = n, fill = class))+
+  geom_bar(position = "stack", stat = "identity")+
+  xlab("Year")+
+  ylab("Occurrences")+
+  scale_y_continuous(labels = scales::comma)+
+  theme_classic()
+
+p + theme(legend.position = "none")
+
+
+## 4.5. Animal classes through time ----
+#Subset df to only contain animal classes
+animal_occurreces <- occurrences_class |>
+  filter(kingdom == "Animalia")
+
+#Plot fungal classes through time
+a <- ggplot(animal_occurreces, aes(x = year, y = n, fill = class))+
+  geom_bar(position = "stack", stat = "identity")+
+  xlab("Year")+
+  ylab("Occurrences")+
+  scale_y_continuous(labels = scales::comma)+
+  theme_classic()
+
+a + theme(legend.position = "none")
+
+### 4.5.1. Remove the major classes (Aves, Insecta, Mammalia) to see smaller patterns ----
+#Subset df to exclude major classes
+other_animal_occurreces <- animal_occurreces |>
+  filter(!class %in% c("Aves", "Insecta", "Mammalia"))
+
+#Plot fungal classes through time
+a2 <- ggplot(other_animal_occurreces, aes(x = year, y = n, fill = class))+
+  geom_bar(position = "stack", stat = "identity")+
+  xlab("Year")+
+  ylab("Occurrences")+
+  scale_y_continuous(labels = scales::comma)+
+  theme_classic()
+
+a2 + theme(legend.position = "none")
