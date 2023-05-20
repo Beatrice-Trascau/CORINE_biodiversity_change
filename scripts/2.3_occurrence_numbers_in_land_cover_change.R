@@ -20,7 +20,7 @@ library(ggplot2)
 
 # 1. LOAD DATA ----
 
-## 1.1. Download cleaned occurrence records and modified corine stack from box ---
+## 1.1. Download cleaned occurrence records and modified corine stack from box ----
 
 #Add download link
 cleaned_occurrences <- ("https://ntnu.box.com/shared/static/cgjbsfs24m31uov6ir4vkkmw6cs7ga36.txt")
