@@ -14,17 +14,24 @@ library(here)
 library(wdpar)
 library(terra)
 library(sf)
+library(tidyverse)
 
 # 1. LOAD DATA ----
 
 ## 1.1. Download data from box (if needed) ----
 
-#Add download link
+#Add download links
 norway_corine <- ("https://ntnu.box.com/shared/static/ugwtizqcr3a4t4vgxj6qu0rh0h54rtoh.tif")
+ruter500m_Norge <- ("https://ntnu.box.com/shared/static/p8896x2epq4bcmfhorsb5qn2m8mxo5ko.zip")
 
 #Download the file to file
 download.file(norway_corine, here("data",
                                   "corine_modified_classes_stack.tif"))
+
+download.file(ruter500m_Norge, here("data",
+                                     "ruter500m_Norge.zip"))
+
+#Unzip files
 
 
 ## 1.2. Download PA network from WDAP database ----
