@@ -151,7 +151,8 @@ PA_raster <- terra::rasterize(norway_PA,
 
 #Rasterize SSB grids to norway_corine
 SSB_raster <- terra::rasterize(norway_ssb_grids,
-                               norway_corine[[4]])
+                               norway_corine[[4]],
+                               field = "SSBid")
 
 ##3.3. Elevation ----
 
@@ -163,7 +164,7 @@ elevation_raster <- terra::rasterize(norway_elevation,
 ##3.4. Combine all data in a single object ----
 
 #Replace NA values with a specific number (to help with extracting the values)
-norway_corine[[4]][is.na(norway_corine[[4]])] <- -9999
+norway_corine[is.na(norway_corine)] <- -9999
 PA_raster[is.na(PA_raster)] <- -9999
 #ssb grids
 SSB_raster[is.na(SSB_raster)] <- -9999
@@ -171,8 +172,13 @@ SSB_raster[is.na(SSB_raster)] <- -9999
 elevation_raster[is.na(elevation_raster)] <- -9999
 
 
-#Extract values from CORINE and the PA rasterization output
-land_cover_values <- values(norway_corine[[4]])
+#Extract values from CORINE and rasterization outputs
+#corine
+land_cover_values_2000 <- values(norway_corine[[1]])
+land_cover_values_2006 <- values(norway_corine[[2]])
+land_cover_values_2012 <- values(norway_corine[[3]])
+land_cover_values_2018 <- values(norway_corine[[4]])
+#PA netwok
 norway_pa_values <- values(PA_raster)
 #ssb grids
 norway_ssb_values <- values(SSB_raster)
@@ -185,7 +191,10 @@ all_pixel_data <- data.frame(x = xFromCol(norway_corine[[4]],
                                     1:ncell(norway_corine[[4]])),
                        y = yFromCell(norway_corine[[4]],
                                      1:ncell(norway_corine[[4]])),
-                       land_cover_value = land_cover_values,
+                       land_cover_values_2000 = land_cover_values_2000,
+                       land_cover_values_2006 = land_cover_values_2006,
+                       land_cover_values_2012 = land_cover_values_2012,
+                       land_cover_values_2018 = land_cover_values_2018,
                        protected_area = norway_pa_values,
                        norway_ssb_values = norway_ssb_values,
                        norway_elevation_values = norway_elevation_values)
@@ -198,19 +207,28 @@ names(all_pixel_data)
 #Replace the -9999 value with NA (which is what it was from the begining)
 #maybe I should remove the rows that have NA for land cover completely
 all_pixel_data <- all_pixel_data |>
-  rename("land_cover" = "U2018_CLC2018_V2020_20u1",
+  rename("land_cover_2000" = "U2006_CLC2000_V2020_20u1",
+         "land_cover_2006" = "U2012_CLC2006_V2020_20u1",
+         "land_cover_2012" = "U2018_CLC2012_V2020_20u1",
+         "land_cover_2018" = "U2018_CLC2018_V2020_20u1",
          "PA_status" = "layer",
-         "SSB_grid" = "layer.1",
-         "elevation_m" = "layer.2") |>
-  mutate(land_cover = na_if(land_cover,
-                            land_cover == -9999),
+         "elevation_m" = "layer.1") |>
+  mutate(land_cover_2000 = na_if(land_cover_2000,
+                                 land_cover_2000 == -9999),
+         land_cover_2006 = na_if(land_cover_2006,
+                                 land_cover_2006 == -9999),
+         land_cover_2012 = na_if(land_cover_2012,
+                                 land_cover_2012 == -9999),
+         land_cover_2018 = na_if(land_cover_2018,
+                                 land_cover_2018 == -9999),
          PA_status = case_when(PA_status == NA ~ "N",
                                PA_status != NA ~ "Y"),
-         SSB_grid = na_if(SSB_grid,
-                          SSB_grid == -9999),
+         SSBid = na_if(SSBid,
+                       SSBid == -9999),
          elevation_m = na_if(elevation_m,
                              elevation_m == -9999))
 
 #Save the dataframe
 write.csv(all_pixel_data,
-          here("data", "combine_pixel_data.csv"))
+          here("data", "combine_pixel_data.csv"),
+          overwrite = T)
