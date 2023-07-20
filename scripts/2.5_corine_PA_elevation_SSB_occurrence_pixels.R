@@ -205,7 +205,6 @@ all_pixel_data <- data.frame(x = xFromCol(norway_corine[[4]],
 names(all_pixel_data)
 
 #Replace the -9999 value with NA (which is what it was from the begining)
-#maybe I should remove the rows that have NA for land cover completely
 all_pixel_data <- all_pixel_data |>
   rename("land_cover_2000" = "U2006_CLC2000_V2020_20u1",
          "land_cover_2006" = "U2012_CLC2006_V2020_20u1",
@@ -227,6 +226,54 @@ all_pixel_data <- all_pixel_data |>
                        SSBid == -9999),
          elevation_m = na_if(elevation_m,
                              elevation_m == -9999))
+
+#Remove rows with NA in the land cover fields
+clean_pixel_data <- all_pixel_data |>
+  filter(land_cover_2000 == -9999 |
+           land_cover_2006 == -9999 |
+           land_cover_2012 == -9999 |
+           land_cover_2018 == -9999 ) 
+
+#Replace land cover numerical values with the corresponding categories
+#have to be done stepwise because of memory issues
+#land_cover_2000
+clean_pixel_data <- clean_pixel_data |>
+  mutate(land_cover_2000 = case_when(land_cover_2000 == 1 ~ "urban_fabric",
+                                     land_cover_2000 == 80 ~ "complex_agriculture",
+                                     land_cover_2000 == 103 ~ "agriculture_natural_veg",
+                                     land_cover_2000 == 250 ~ "forests",
+                                     land_cover_2000 == 380 ~ "moors_heath_grass",
+                                     land_cover_2000 == 590 ~ "trans_woodland_shrub",
+                                     land_cover_2000 == 711 ~ "sparse_vegetation"))
+#land_cover_2006
+clean_pixel_data <- clean_pixel_data |>
+  mutate(land_cover_2006 = case_when(land_cover_2006 == 1 ~ "urban_fabric",
+                                     land_cover_2006 == 80 ~ "complex_agriculture",
+                                     land_cover_2006 == 103 ~ "agriculture_natural_veg",
+                                     land_cover_2006 == 250 ~ "forests",
+                                     land_cover_2006 == 380 ~ "moors_heath_grass",
+                                     land_cover_2006 == 590 ~ "trans_woodland_shrub",
+                                     land_cover_2006 == 711 ~ "sparse_vegetation"))
+
+#land_cover_2012
+clean_pixel_data <- clean_pixel_data |>
+  mutate(land_cover_2012 = case_when(land_cover_2012 == 1 ~ "urban_fabric",
+                                     land_cover_2012 == 80 ~ "complex_agriculture",
+                                     land_cover_2012 == 103 ~ "agriculture_natural_veg",
+                                     land_cover_2012 == 250 ~ "forests",
+                                     land_cover_2012 == 380 ~ "moors_heath_grass",
+                                     land_cover_2012 == 590 ~ "trans_woodland_shrub",
+                                     land_cover_2012 == 711 ~ "sparse_vegetation"))
+ #land_cover_2018
+clean_pixel_data <- clean_pixel_data |>
+  mutate(land_cover_2018 = case_when(land_cover_2018 == 1 ~ "urban_fabric",
+                                     land_cover_2018 == 80 ~ "complex_agriculture",
+                                     land_cover_2018 == 103 ~ "agriculture_natural_veg",
+                                     land_cover_2018 == 250 ~ "forests",
+                                     land_cover_2018 == 380 ~ "moors_heath_grass",
+                                     land_cover_2018 == 590 ~ "trans_woodland_shrub",
+                                     land_cover_2018 == 711 ~ "sparse_vegetation"))
+         
 
 #Save the dataframe
 write.csv(all_pixel_data,
