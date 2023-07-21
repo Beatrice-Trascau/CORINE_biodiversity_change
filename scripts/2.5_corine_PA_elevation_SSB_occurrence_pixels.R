@@ -18,6 +18,8 @@ library(sf)
 library(tidyverse)
 library(dplyr)
 
+start_time <- Sys.time()
+
 # 1. LOAD DATA ----
 
 ## 1.1. Download data from box (if needed) ----
@@ -569,3 +571,8 @@ clean_pixel_data <- clean_pixel_data |>
 write.csv(clean_pixel_data,
           here("data", "combine_pixel_data.csv"),
           overwrite = T)
+
+end_time <- Syst.time()
+
+end_time - start_time
+
