@@ -315,22 +315,22 @@ elevation_raster <- terra::rasterize(norway_elevation,
 
 #First period of land cover change: 2000 to 2006; BEFORE Change = 1997-2000, AFTER Change = 2006-2009
  #Before:
-occurrence_2000_2006_before <- terra::rasterize(spatial_occurrence_2000_2006_1,
+occurrence_2000_2006_before <- terra::rasterize(spatial_occurrence_2000.2006_1,
                                          norway_land_cover_change[[1]],
                                          fun = sum)
   #After
-occurrence_2000_2006_after <- terra::rasterize(spatial_occurrence_2000_2006_2,
+occurrence_2000_2006_after <- terra::rasterize(spatial_occurrence_2000.2006_2,
                                                 norway_land_cover_change[[1]],
                                                 fun = sum)
 
  #Second period of land cover change: 2006 to 2012; BEFORE Change = 2003-2006, AFTER Change = 2012-2015
  #Before
-occurrence_2006_2012_before <- terra::rasterize(spatial_occurrence_2006_2012_1,
+occurrence_2006_2012_before <- terra::rasterize(spatial_occurrence_2006.2012_1,
                                                 norway_land_cover_change[[2]],
                                                 fun = sum)
 
  #After
-occurrence_2006_2012_after <- terra::rasterize(spatial_occurrence_2006_2012_2,
+occurrence_2006_2012_after <- terra::rasterize(spatial_occurrence_2006.2012_2,
                                                 norway_land_cover_change[[2]],
                                                 fun = sum)
 
