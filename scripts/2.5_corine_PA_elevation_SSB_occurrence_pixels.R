@@ -25,7 +25,7 @@ start_time <- Sys.time()
 ## 1.1. Download data from box (if needed) ----
 
 #Add download links
-norway_corine <- ("https://ntnu.box.com/shared/static/ugwtizqcr3a4t4vgxj6qu0rh0h54rtoh.tif")
+norway_corine <- ("https://ntnu.box.com/shared/static/knmrgdptal3wx900shryypgprdu3t7sb.tif")
 ruter500m_Norge <- ("https://ntnu.box.com/shared/static/p8896x2epq4bcmfhorsb5qn2m8mxo5ko.zip")
 dtm50 <- ("https://ntnu.box.com/shared/static/zqrn2zi85d7nm7aaseuvsetazi4qn5uy.zip")
 cleaned_occurrences <- ("https://ntnu.box.com/shared/static/cgjbsfs24m31uov6ir4vkkmw6cs7ga36.txt")
@@ -566,13 +566,17 @@ clean_pixel_data <- clean_pixel_data |>
                                                                                     -510, -147, -277, -487, 130,
                                                                                     -210, 461, 331, 121) ~ "Succession",
                                                  land_cover_change_2012_2018 %in% c(79, 102, 249, 
-                                                                                    379, 589, 710) ~ "Urbanisation"))
+
+                                                                                                                                                                        379, 589, 710) ~ "Urbanisation"))
+
+end_time <- Syst.time()
+
+end_time - start_time
+
 #Save the dataframe
 write.csv(clean_pixel_data,
           here("data", "combine_pixel_data.csv"),
           overwrite = T)
 
-end_time <- Syst.time()
 
-end_time - start_time
 
