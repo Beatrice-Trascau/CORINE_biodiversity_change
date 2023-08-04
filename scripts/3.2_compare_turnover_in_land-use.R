@@ -14,6 +14,7 @@ library(tidyverse)
 library(dplyr)
 library(ggplot)
 library(ggpubr)
+library(car)
 
 # 1. LOAD DATA ----
 
@@ -115,4 +116,22 @@ summary(turnover_aov)
 TukeyHSD(turnover_aov, which = "year")
 
 #Compute summary statistics
+group_by(land_turnover, cover_change, year) %>%
+  summarise(
+    count = n(),
+    mean = mean(len, na.rm = TRUE),
+    sd = sd(len, na.rm = TRUE)
+  )
 
+## 3.3. Check ANOVA assumptions ----
+
+#Homogenous variance
+plot(turnover_aov, 1)
+ #Levene's test to check for homogeneity of variance
+leveneTest(turnover ~ year * cover_change, data = land_turnover)
+
+#Normality
+plot(turnover_aov, 2)
+ #Shapiro-Wilk test
+aov_residuals <- residuals(object = turnover_aov) #extract residuals
+shapiro.test(x = aov_residuals)
