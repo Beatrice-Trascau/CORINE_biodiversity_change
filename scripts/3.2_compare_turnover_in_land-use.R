@@ -12,7 +12,7 @@
 library(here)
 library(tidyverse)
 library(dplyr)
-library(ggplot)
+library(ggplot2)
 library(ggpubr)
 library(car)
 
@@ -25,7 +25,7 @@ occurrences_turnover <- ("https://ntnu.box.com/shared/static/id4wjupv412wpm79vca
 
 #Download the file to local
 download.file(occurrences_turnover, here("data",
-                               "occurrences_turnover.rds"))
+                                         "occurrences_turnover.rds"))
 
 
 ## 1.2. Read in the data ----
@@ -43,9 +43,9 @@ occurrences_turnover <- occurrences_turnover |>
 
 ## 2.2. Convert to long format ----
 
-#Remove columns 1 to 13 (not needed anymore)
+#Remove columns 2 to 13 (not needed anymore)
 compressed_occurrence_turnover <- occurrences_turnover |>
-  select(-c(cell, species_1997.2000, geometry_1997.2000,
+  select(-c(species_1997.2000, geometry_1997.2000,
             species_2006.2009, geometry_2006.2009, 
             species_2003.2006, geometry_2003.2006,
             species_2012.2015, geometry_2012.2015,
@@ -58,7 +58,7 @@ compressed_occurrence_turnover <- occurrences_turnover |>
 #Create separate df for turnover
 turnover_long <- compressed_occurrence_turnover |>
   #Select only the turnover columns
-  select(c(turover2000.2006, turover2006.2012,
+  select(c(cell, turover2000.2006, turover2006.2012,
            turover2012.2018)) |>
   #Convert to long format
   pivot_longer(
@@ -67,15 +67,17 @@ turnover_long <- compressed_occurrence_turnover |>
     values_to = "turnover") |>
   #Change turnover_year value to only contain the year
   mutate(year = case_when(turnover_year == "turover2000.2006" ~ "2000.2006",
-                                   turnover_year == "turover2006.2012" ~ "2006.2012",
-                                   turnover_year == "turover2012.2018" ~ "2012.2018")) |>
+                          turnover_year == "turover2006.2012" ~ "2006.2012",
+                          turnover_year == "turover2012.2018" ~ "2012.2018"),
+         new_cell = cell$U2006_CLC2000_V2020_20u1,
+         ID = paste(new_cell, year, sep = "_")) |>
   #Remove unnecessary turnover_year column
-  select(-turnover_year)
+  select(-c(turnover_year, cell, new_cell))
 
 #Create separate df for the land cover changes
 land_change_long <- compressed_occurrence_turnover |>
   #Select only the turnover columns
-  select(c(cover_change_2000.2006, cover_change_2006.2012,
+  select(c(cell, cover_change_2000.2006, cover_change_2006.2012,
            cover_change_2012.2018)) |>
   #Convert to long format
   pivot_longer(
@@ -85,22 +87,34 @@ land_change_long <- compressed_occurrence_turnover |>
   #Change cover_change_year value to only contain the year
   mutate(year = case_when(cover_change_year == "cover_change_2000.2006" ~ "2000.2006",
                           cover_change_year == "cover_change_2006.2012" ~ "2006.2012",
-                          cover_change_year == "cover_change_2012.2018" ~ "2012.2018")) |>
+                          cover_change_year == "cover_change_2012.2018" ~ "2012.2018"),
+         new_cell = cell$U2006_CLC2000_V2020_20u1,
+         ID = paste(new_cell, year, sep = "_")) |>
   #Remove unnecessary cover_change_year column
-  select(-cover_change_year)
-
+  select(-c(cover_change_year, cell, new_cell))
 
 #Merge the turnover_long and land_cover_change dfs
 land_turnover <- merge(turnover_long, land_change_long,
-                       by = "year")
+                       by = "ID")
 
+#Check cols
+colnames(land_turnover)
+
+#Check that year.x & year.y are the same
+setequal(land_turnover$year.x, land_turnover$year.y) #TRUE
+
+#Remove year.x and year.y columns
+land_turnover <- land_turnover |>
+  mutate(year = year.y) |>
+  select(-year.x)
 
 # 3. COMPARE TURNOVER BETWEEN LAND COVER CHANGES AND YEARS ----
 
 ## 3.1. Visualise data ----
 
 #Boxplot with land cover and year
-ggboxplot(land_turnover, x = "cover_change", y = "turnover", color = "year",
+ggboxplot(land_turnover, x = "cover_change", y = "turnover", 
+          color = "year", fill = "year",
           palette = c("#6DD3CE", "#C8E9A0", "#F7A278"))
 
 
@@ -119,19 +133,19 @@ TukeyHSD(turnover_aov, which = "year")
 group_by(land_turnover, cover_change, year) %>%
   summarise(
     count = n(),
-    mean = mean(len, na.rm = TRUE),
-    sd = sd(len, na.rm = TRUE)
+    mean = mean(turnover, na.rm = TRUE),
+    sd = sd(turnover, na.rm = TRUE)
   )
 
 ## 3.3. Check ANOVA assumptions ----
 
 #Homogenous variance
 plot(turnover_aov, 1)
- #Levene's test to check for homogeneity of variance
-leveneTest(turnover ~ year * cover_change, data = land_turnover)
+#Levene's test to check for homogeneity of variance
+leveneTest(turnover ~ year.y * cover_change, data = land_turnover)
 
 #Normality
 plot(turnover_aov, 2)
- #Shapiro-Wilk test
+#Shapiro-Wilk test
 aov_residuals <- residuals(object = turnover_aov) #extract residuals
 shapiro.test(x = aov_residuals)
