@@ -22,7 +22,7 @@ library(car)
 ## 1.1. Download data from box (if needed) ----
 
 #Add download link
-occurrences_turnover <- ("https://ntnu.box.com/shared/static/id4wjupv412wpm79vcanxeehewe5wa2v.rds")
+occurrences_turnover <- ("https://ntnu.box.com/shared/static/h4r6naswo0frbxkfnae5tyx1d7ld4v3z.rds")
 
 #Download the file to local
 download.file(occurrences_turnover, here("data",
