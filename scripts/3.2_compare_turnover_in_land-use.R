@@ -14,6 +14,7 @@ library(tidyverse)
 library(dplyr)
 library(ggplot2)
 library(ggpubr)
+library(svglite)
 library(car)
 
 # 1. LOAD DATA ----
@@ -117,6 +118,74 @@ ggboxplot(land_turnover, x = "cover_change", y = "turnover",
           color = "year", fill = "year",
           palette = c("#6DD3CE", "#C8E9A0", "#F7A278"))
 
+
+#Another boxplot with land cover and year
+ggplot(land_turnover, aes(x = cover_change, y = turnover,
+                          fill = year, color = year),
+       stat = "identity",
+       position = "dodge")+
+  geom_boxplot()+
+  scale_color_manual(labels = c("2000-2006", "2006-2012", "2012-2018"),
+                     values = c("#0A2544", "#2C6F2C", "#D10BD1"),
+                     name = "Sampling Years")+
+  scale_fill_manual(name = "Sampling Years",
+                    labels = c("2000-2006", "2006-2012", "2012-2018"),
+                    values = c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  
+  scale_x_discrete(labels = c("Deforestation", "Extensification", "Forestry",
+                              "Intensification", "No Change", "Succession",
+                              "Succession/Forestry", "Urbanisation"))+
+  xlab("Land Cover Transitions")+
+  ylab("Turnover")+
+  coord_flip()+
+  theme_classic()+
+  theme(axis.title.x = element_text(size = 16),
+        axis.text.x = element_text(size = 14,
+                                   color = "#000000"),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 14,
+                                   color = "#000000"),
+        legend.title = element_text(size=14),
+        legend.text = element_text(size = 13.5))
+#save the plot
+ggsave(here("figures",
+            "turnover_land_cover_changes.svg"))
+
+
+#Boxplot with jitter
+#Another boxplot with land cover and year
+ggplot(land_turnover, aes(x = cover_change, y = turnover,
+                          fill = year, color = year),
+       stat = "identity",
+       position = "dodge")+
+  geom_boxplot()+
+  scale_color_manual(labels = c("2000-2006", "2006-2012", "2012-2018"),
+                     values = c("#0A2544", "#2C6F2C", "#D10BD1"),
+                     name = "Sampling Years")+
+  scale_fill_manual(name = "Sampling Years",
+                    labels = c("2000-2006", "2006-2012", "2012-2018"),
+                    values = c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  
+  scale_x_discrete(labels = c("Deforestation", "Extensification", "Forestry",
+                              "Intensification", "No Change", "Succession",
+                              "Succession/Forestry", "Urbanisation"))+
+  geom_jitter(size = 0.7, alpha = 0.5)+
+  xlab("Land Cover Transitions")+
+  ylab("Turnover")+
+  coord_flip()+
+  theme_classic()+
+  theme(axis.title.x = element_text(size = 16),
+        axis.text.x = element_text(size = 14,
+                                   color = "#000000"),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 14,
+                                   color = "#000000"),
+        legend.title = element_text(size=14),
+        legend.text = element_text(size = 13.5))
+
+#save the plot
+ggsave(here("figures",
+            "turnover_land_cover_changes_with_jitter.svg"))
 
 ## 3.2. Compute two-way ANOVA test ----
 
