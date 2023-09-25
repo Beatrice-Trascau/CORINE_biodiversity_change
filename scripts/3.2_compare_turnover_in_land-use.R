@@ -58,40 +58,40 @@ compressed_occurrence_turnover <- occurrences_turnover |>
 
 #Create separate df for turnover
 turnover_long <- compressed_occurrence_turnover |>
-  #Select only the turnover columns
+  #select only the turnover columns
   select(c(cell, turover2000.2006, turover2006.2012,
            turover2012.2018)) |>
-  #Convert to long format
+  #convert to long format
   pivot_longer(
     cols = "turover2000.2006":"turover2012.2018",
     names_to = "turnover_year",
     values_to = "turnover") |>
-  #Change turnover_year value to only contain the year
+  #change turnover_year value to only contain the year
   mutate(year = case_when(turnover_year == "turover2000.2006" ~ "2000.2006",
                           turnover_year == "turover2006.2012" ~ "2006.2012",
                           turnover_year == "turover2012.2018" ~ "2012.2018"),
          new_cell = cell$U2006_CLC2000_V2020_20u1,
          ID = paste(new_cell, year, sep = "_")) |>
-  #Remove unnecessary turnover_year column
+  #remove unnecessary turnover_year column
   select(-c(turnover_year, cell, new_cell))
 
 #Create separate df for the land cover changes
 land_change_long <- compressed_occurrence_turnover |>
-  #Select only the turnover columns
+  #select only the turnover columns
   select(c(cell, cover_change_2000.2006, cover_change_2006.2012,
            cover_change_2012.2018)) |>
-  #Convert to long format
+  #convert to long format
   pivot_longer(
     cols = "cover_change_2000.2006":"cover_change_2012.2018",
     names_to = "cover_change_year",
     values_to = "cover_change") |>
-  #Change cover_change_year value to only contain the year
+  #change cover_change_year value to only contain the year
   mutate(year = case_when(cover_change_year == "cover_change_2000.2006" ~ "2000.2006",
                           cover_change_year == "cover_change_2006.2012" ~ "2006.2012",
                           cover_change_year == "cover_change_2012.2018" ~ "2012.2018"),
          new_cell = cell$U2006_CLC2000_V2020_20u1,
          ID = paste(new_cell, year, sep = "_")) |>
-  #Remove unnecessary cover_change_year column
+  #remove unnecessary cover_change_year column
   select(-c(cover_change_year, cell, new_cell))
 
 #Merge the turnover_long and land_cover_change dfs
@@ -109,9 +109,9 @@ land_turnover <- land_turnover |>
   mutate(year = year.y) |>
   select(-year.x)
 
-# 3. COMPARE TURNOVER BETWEEN LAND COVER CHANGES AND YEARS ----
+# 3. VISUALLY COMPARE TURNOVER BETWEEN LAND COVER CHANGES AND YEARS ----
 
-## 3.1. Visualise data ----
+## 3.1. Check and Prepare Data ----
 
 #Check the number of observations for each combination of year and land cover transition
 land_turnover |>
@@ -124,17 +124,18 @@ land_turnover <- land_turnover |>
   filter(!(cover_change == "Extensification" & year == "2006.2012")) |>
   filter(!(cover_change == "Succession" & year == "2012.2018"))
 
-#Boxplot with land cover and year
+## 3.2. Simple boxplot with land cover and year ----
 ggboxplot(land_turnover, x = "cover_change", y = "turnover", 
           color = "year", fill = "year",
           palette = c("#6DD3CE", "#C8E9A0", "#F7A278"))
 
 
-#Violin plot with boxplot nested inside of land cover and year
+## 3.3. Violin plot with boxplot nested inside for land cover and year ---
  
- #define dodge width
+#Define dodge width
 dodge_width <- 0.6
 
+#Plot violin and boxplot
 ggplot(land_turnover, aes(x = cover_change, y = turnover,
                           fill = year))+
   geom_violin(position = position_dodge(width = dodge_width))+
@@ -162,12 +163,67 @@ ggplot(land_turnover, aes(x = cover_change, y = turnover,
         legend.title = element_text(size=14),
         legend.text = element_text(size = 13.5))
 
- #save the plot
+#Save the plot
 ggsave(here("figures",
             "turnover_land_cover_changes.svg"))
 
+## 3.3. Violin plot with boxplot  nested inside for land cover and year without 2000-2006 ----
 
-#Boxplot with jitter
+#Remove 2000-2006 years and the post-2006 groups that had fewer than 2 data points
+  #i.e. Extensification 2006-2012, Succession 2012-2018
+land_turnover_after2006 <- land_turnover |>
+  filter(!(year == "2000.2006")) |>
+  filter(!(cover_change == "Extensification" & year == "2006.2012")) |>
+  filter(!(cover_change == "Succession" & year == "2012.2018"))
+
+#Check the number of data points for each group
+land_turnover_after2006 |>
+  count(cover_change, year) #Forestry = 
+
+#Define dodge width
+dodge_width <- 0.6
+
+#Violin + boxplot 2006 - 2018
+ggplot(land_turnover_after2006, aes(x = cover_change, y = turnover,
+                          fill = year))+
+  geom_violin(position = position_dodge(width = dodge_width))+
+  geom_boxplot(aes(color = year.y), width = 0.2, alpha = 0.2,
+               position = position_dodge(width = dodge_width))+
+  scale_color_manual(labels = c("2006-2012", "2012-2018"),
+                     values = c("#2C6F2C", "#D10BD1"),
+                     name = "Sampling Years")+
+  scale_fill_manual(name = "Sampling Years",
+                    labels = c("2006-2012", "2012-2018"),
+                    values = c("#C8E9A0", "#F7A278"))+
+  scale_x_discrete(labels = c("Forest Harvesting (n=59)", "Intensification (n=18)",
+                              "Succession (n=5)", "Forest Succession (n=50)",
+                              "Urbanisation (n = 29)", "No Change (n=32883)"))+
+  xlab("Land Cover Transitions")+
+  ylab("Turnover")+
+  coord_flip()+
+  theme_classic()+
+  theme(axis.title.x = element_text(size = 16),
+        axis.text.x = element_text(size = 14,
+                                   color = "#000000"),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 14,
+                                   color = "#000000"),
+        legend.title = element_text(size=14),
+        legend.text = element_text(size = 13.5))
+
+#Check how geom_boxplot() and geom_violin() calculate the interquartile range
+by(land_turnover_after2006$turnover, land_turnover_after2006$cover_change, 
+   function(x) boxplot.stats(x, coef=5)$stats )
+by(land_turnover_after2006$turnover, land_turnover_after2006$cover_change, 
+   function(v) quantile(density(v)$x))
+
+#Geom_violin() and geom_boxplot() calculate different values for the interquartile range
+
+#Save the plot
+ggsave(here("figures",
+            "turnover_land_cover_changes_violin_boxplot_2006-2018.svg"))
+
+## 3.4. Boxplot with jitter ----
 #Another boxplot with land cover and year
 ggplot(land_turnover, aes(x = cover_change, y = turnover,
                           fill = year, color = year),
@@ -198,6 +254,8 @@ ggplot(land_turnover, aes(x = cover_change, y = turnover,
         legend.title = element_text(size=14),
         legend.text = element_text(size = 13.5))
 
-#save the plot
+#Save the plot
 ggsave(here("figures",
             "turnover_land_cover_changes_with_jitter.svg"))
+
+#END OF SCRIPT ----
