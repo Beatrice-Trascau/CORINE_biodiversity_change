@@ -113,28 +113,42 @@ land_turnover <- land_turnover |>
 
 ## 3.1. Visualise data ----
 
+#Check the number of observations for each combination of year and land cover transition
+land_turnover |>
+  count(cover_change, year) #3 groups have only 1 observation: Deforestation 2000-2006,
+                            #Extensification 2006-2012, Succession 2012-2018
+
+#Drop the combinations from the df before plotting - otherwise they will confuse the violin
+land_turnover <- land_turnover |>
+  filter(!(cover_change == "Deforestation" & year == "2000.2006")) |>
+  filter(!(cover_change == "Extensification" & year == "2006.2012")) |>
+  filter(!(cover_change == "Succession" & year == "2012.2018"))
+
 #Boxplot with land cover and year
 ggboxplot(land_turnover, x = "cover_change", y = "turnover", 
           color = "year", fill = "year",
           palette = c("#6DD3CE", "#C8E9A0", "#F7A278"))
 
 
-#Another boxplot with land cover and year
+#Violin plot with boxplot nested inside of land cover and year
+ 
+ #define dodge width
+dodge_width <- 0.6
+
 ggplot(land_turnover, aes(x = cover_change, y = turnover,
-                          fill = year, color = year),
-       stat = "identity",
-       position = "dodge")+
-  geom_boxplot()+
+                          fill = year))+
+  geom_violin(position = position_dodge(width = dodge_width))+
+  geom_boxplot(aes(color = year.y), width = 0.2, alpha = 0.2,
+               position = position_dodge(width = dodge_width))+
   scale_color_manual(labels = c("2000-2006", "2006-2012", "2012-2018"),
                      values = c("#0A2544", "#2C6F2C", "#D10BD1"),
                      name = "Sampling Years")+
   scale_fill_manual(name = "Sampling Years",
                     labels = c("2000-2006", "2006-2012", "2012-2018"),
                     values = c("#6DD3CE", "#C8E9A0", "#F7A278"))+
-  
-  scale_x_discrete(labels = c("Deforestation", "Extensification", "Forestry",
-                              "Intensification", "No Change", "Succession",
-                              "Succession/Forestry", "Urbanisation"))+
+  scale_x_discrete(labels = c("Forest Harvesting (n = 100)", "Intensification (n =27)",
+                              "No Change (n = 49280)", "Succession (n=10)", 
+                              "Forest Succession (n = 60)", "Urbanisation (n = 89)"))+
   xlab("Land Cover Transitions")+
   ylab("Turnover")+
   coord_flip()+
@@ -147,7 +161,8 @@ ggplot(land_turnover, aes(x = cover_change, y = turnover,
                                    color = "#000000"),
         legend.title = element_text(size=14),
         legend.text = element_text(size = 13.5))
-#save the plot
+
+ #save the plot
 ggsave(here("figures",
             "turnover_land_cover_changes.svg"))
 
@@ -186,35 +201,3 @@ ggplot(land_turnover, aes(x = cover_change, y = turnover,
 #save the plot
 ggsave(here("figures",
             "turnover_land_cover_changes_with_jitter.svg"))
-
-## 3.2. Compute two-way ANOVA test ----
-
-#Run two-way ANOVA test
-turnover_aov <- aov(turnover ~ year * cover_change,
-                    data = land_turnover)
-#Get summary
-summary(turnover_aov)
-
-#Tukey post hoc test
-TukeyHSD(turnover_aov, which = "year")
-
-#Compute summary statistics
-group_by(land_turnover, cover_change, year) %>%
-  summarise(
-    count = n(),
-    mean = mean(turnover, na.rm = TRUE),
-    sd = sd(turnover, na.rm = TRUE)
-  )
-
-## 3.3. Check ANOVA assumptions ----
-
-#Homogenous variance
-plot(turnover_aov, 1)
-#Levene's test to check for homogeneity of variance
-leveneTest(turnover ~ year.y * cover_change, data = land_turnover)
-
-#Normality
-plot(turnover_aov, 2)
-#Shapiro-Wilk test
-aov_residuals <- residuals(object = turnover_aov) #extract residuals
-shapiro.test(x = aov_residuals)
