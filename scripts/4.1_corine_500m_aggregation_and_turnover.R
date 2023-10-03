@@ -9,6 +9,7 @@
 # 0. PACKAGES ----
 library(here)
 library(terra)
+library(data.table)
 library(dplyr)
 library(sf)
 
@@ -17,6 +18,11 @@ library(sf)
 ## 1.1. CORINE Land Cover Data ----
 norway_corine <- rast(here("data",
                            "corine_modified_classes_stack.tif"))
+
+## 1.2. GBIF Occurrence Records -----
+clean_occurrences <- fread(here::here("data", 
+                                      "cleaned_occurrences.txt"))
+
 
 # 2. AGGREGGATE LAND COVER CHANGES TO 500M ----
 
@@ -121,3 +127,91 @@ aggregated_extens_06_12 <- terra::aggregate(extens_06_12, fact = 5,
 # Extensificatin in 2012 - 2018
 aggregated_extens_12_18 <- terra::aggregate(extens_12_18, fact = 5,
                                             fun = sum)
+
+## 2.5. Write rasters to file ----
+
+# Stack layers into one raster stack for intensification and extensificaiton
+aggregated_intens <- c(aggregated_intens_00_06,
+                       aggregated_intens_06_12,
+                       aggregated_intens_12_18)
+
+aggregated_extens <- c(aggregated_extens_00_06,
+                       aggregated_extens_06_12,
+                       aggregated_extens_12_18)
+
+# Write raster stacks to file
+terra::writeRaster(aggregated_intens,
+                   here("data", "aggregated_500m_intensification_stack.tif"))
+
+terra::writeRaster(aggregated_extens,
+                   here("data", "aggregated_500m_extensification_stack.tif"))
+
+
+# 3. PREPARE OCCURRENCES FOR TURNOVER ANALYSIS -----
+
+## 3.1. Subset occurrence records df for each period of "before" and "after" change ----
+
+#N.B: Periods pf change are:
+#First period of land cover change: 2000 to 2006; BEFORE Change = 1997-2000, AFTER Change = 2006-2009
+#Second period of land cover change: 2006 to 2012; BEFORE Change = 2003-2006, AFTER Change = 2012-2015
+#Third period of land cover change: 2012 to 2018; BEFORE Change = 2009-2012, AFTER Change = 2015-2018
+
+# Period 1: 2000 to 2006
+occurrences1997.2000 <- clean_occurrences |>
+  filter(year %in% c(1997:2000)) #Before change = 1997-2000
+
+occurrences2006.2009 <- clean_occurrences |>
+  filter(year %in% c(2006:2009)) #After change = 2006-2009
+
+# Period 2: 2006 to 2012
+occurrences2003.2006 <- clean_occurrences |>
+  filter(year %in% c(2003:2006)) #Before change = 2003-2006
+
+occurrences2012.2015 <- clean_occurrences |>
+  filter(year %in% c(2012:2015)) #After change = 2012-2015
+
+# Period 3: 2012 to 2018 
+occurrences2009.2012 <- clean_occurrences |>
+  filter(year %in% c(2009:2012)) #Before change = 2009-2012
+
+occurrences2015.2018 <- clean_occurrences |>
+  filter(year %in% c(2015:2018)) #After change = 2015-2018
+
+## 3.2. Convert occurrences to sf objects ----
+
+# Put all occurrence dfs created above in a list
+occurrence_list <- list("1997.2000" = occurrences1997.2000,
+                        "2006.2009" = occurrences2006.2009,
+                        "2003.2006" = occurrences2003.2006,
+                        "2012.2015" = occurrences2012.2015,
+                        "2009.2012" = occurrences2009.2012,
+                        "2015.2018" = occurrences2015.2018)
+
+# Convert each occurrence df to an sf object
+for(name in names(occurrence_list)){
+  assign(paste0("occurrences_", name, "_sf"),
+         st_as_sf(occurrence_list[[name]],
+                  coords = c("decimalLongitude", "decimalLatitude"),
+                  crs = 4326))
+}
+
+
+## 3.3. Set CRS for sf objects to match CORINE's CRS ----
+
+# Make a list of the names of the sf objects created above
+sf_names <- c("occurrences_1997.2000_sf", "occurrences_2006.2009_sf", 
+              "occurrences_2003.2006_sf", "occurrences_2012.2015_sf", 
+              "occurrences_2009.2012_sf", "occurrences_2015.2018_sf")
+
+# Extrat target CRS from CORINE
+target_crs <- st_crs(norway_corine[[1]])
+
+# Transform each sf object to the correct CRS
+for(name in sf_names){
+  transformed_sf <- st_transform(get(name),
+                                 target_crs)
+  assign(name, transformed_sf)
+}
+
+
+
