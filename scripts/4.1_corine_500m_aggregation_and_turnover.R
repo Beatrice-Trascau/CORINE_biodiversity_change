@@ -147,6 +147,15 @@ terra::writeRaster(aggregated_extens,
                    here("data", "aggregated_500m_extensification_stack.tif"))
 
 
+## 2.6. Create a raster with unique ID for each cell ----
+#This raster is needed to find the identity of the CORINE cells in which turnover takes place
+
+# Create a raster with the same properties as corine (no issue that we are only using 1 year)
+land_cover_id <- aggregated_extens[[1]]
+
+# Assign each cell a unique ID from 1 to ncell
+land_cover_id[] <- 1:ncell(aggregated_extens[[1]])
+
 # 3. PREPARE OCCURRENCES FOR TURNOVER ANALYSIS -----
 
 ## 3.1. Subset occurrence records df for each period of "before" and "after" change ----
@@ -213,5 +222,51 @@ for(name in sf_names){
   assign(name, transformed_sf)
 }
 
+# 4. COMBINE INTENSIFICATION RASTERS AND OCCURRENCE SF OBJECTS ----
 
+## 4.1. Assign species to land cover cells for each time step ----
 
+# Create a list of sf object names ----
+sf_names <- c("occurrences_1997.2000_sf", "occurrences_2006.2009_sf", 
+              "occurrences_2003.2006_sf", "occurrences_2012.2015_sf", 
+              "occurrences_2009.2012_sf", "occurrences_2015.2018_sf")
+
+# Extract cell values for each sf object
+for(name in sf_names){
+  sf_object <- get(name)
+  sf_object$cell <- terra::extract(land_cover_id,
+                                   as.matrix(st_coordinates(sf_object)))
+  assign(name, sf_object)
+}
+
+## 4.2. Group by cell to create list of species for each cell ----
+
+# Create a list of sf object names
+sf_names <- c("occurrences_1997.2000_sf", "occurrences_2006.2009_sf", 
+              "occurrences_2003.2006_sf", "occurrences_2012.2015_sf", 
+              "occurrences_2009.2012_sf", "occurrences_2015.2018_sf")
+
+# Create list of names for the corresponding grouped sf objects
+grouped_names <- c("occurrences_1997.2000_grouped", "occurrences_2006.2009_grouped", 
+                   "occurrences_2003.2006_grouped", "occurrences_2012.2015_grouped", 
+                   "occurrences_2009.2012_grouped", "occurrences_2015.2018_grouped")
+
+# Group by cell to create list of species for each cell
+for (i in seq_along(sf_names)) {
+  grouped_obj <- get(sf_names[i]) |>
+    group_by(cell) |>
+    summarise(species = list(species))
+  assign(grouped_names[i], grouped_obj)
+}
+
+## 4.3. Join data for different timesteps ----
+occurrences_turnover <- left_join(as.data.frame(occurrences_1997.2000_grouped),
+                                  as.data.frame(occurrences_2006.2009_grouped),
+                                  as.data.frame(occurrences_2003.2006_grouped),
+                                  as.data.frame(occurrences_2012.2015_grouped),
+                                  as.data.frame(occurrences_2009.2012_grouped),
+                                  as.data.frame(occurrences_2015.2018_grouped),
+                                  by = "cell",
+                                  suffix = c("_1997.2000", "_2006.2009",
+                                             "_2003.2006", "_2012.2015",
+                                             "_2009.2012", "_2015.2018"))
