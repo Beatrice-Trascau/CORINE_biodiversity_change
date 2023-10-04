@@ -53,6 +53,10 @@ corine_2012_2018[is.na(corine_2012_2018)] <- -9999
 # Forest Harvesting (= the old "Forestry" category = -340)
 # Deforestation (=-130, -461, 210)
 # All above values will be concerted to 1, everything else will be converted to 0
+# -9999 values will be converted back to NA
+# This is done to help the aggregate() function which will calculate an intensification score
+# per aggregate cell (0/25, 1/25...25/25) which will tell us how much nature gain or loss
+# happened in the aggreggated cell between the periods of change
 
 # Intensification in 2000 - 2006 land cover transitions
 intens_00_06 <- terra::ifel(corine_2000_2006 == -9999,  NA, 
@@ -81,6 +85,12 @@ intens_12_18 <- terra::ifel(corine_2012_2018 == -9999,  NA,
 # Forest Succession (=340)
 # Restoration (=-710)
 # Extensification (=-79, -102, 23, 170, 147,300, 277, 510, 487, 631, 608)
+# All above values will be concerted to 1, everything else will be converted to 0
+# -9999 values will be converted back to NA
+# This is done to help the aggregate() function which will calculate an intensification score
+# per aggregate cell (0/25, 1/25...25/25) which will tell us how much nature gain or loss
+# happened in the aggreggated cell between the periods of change
+
 
 # Extensification in 2000 - 2006 land cover transitions
 extens_00_06 <- terra::ifel(corine_2000_2006 == -9999, NA,
@@ -153,7 +163,7 @@ terra::writeRaster(aggregated_extens,
 ## 2.6. Create a raster with unique ID for each cell ----
 #This raster is needed to find the identity of the CORINE cells in which turnover takes place
 
-# Create a raster with the same properties as corine (no issue that we are only using 1 year)
+# Create a raster with the same properties as CORINE (no issue that we are only using 1 year)
 land_cover_id <- aggregated_extens[[1]]
 
 # Assign each cell a unique ID from 1 to ncell
@@ -224,9 +234,9 @@ for(name in sf_names){
   assign(name, transformed_sf)
 }
 
-# 4. COMBINE INTENSIFICATION RASTERS AND OCCURRENCE SF OBJECTS ----
+# 4. COMBINE OCCURRENCE SF OBJECTS WITH THE LAND COVER ID RASTER ----
 
-## 4.1. Assign species to land cover cells for each time step ----
+## 4.1. Assign species to land cover ID cells for each time step ----
 
 # Create a list of sf object names ----
 sf_names <- c("occurrences_1997.2000_sf", "occurrences_2006.2009_sf", 
@@ -287,9 +297,9 @@ occurrences_turnover_a <- left_join(occurrences_turnover_1,
                                     by = "cell")
 
 
-intens_occurrences_turnover <- left_join(occurrences_turnover_a,
-                                         occurrences_turnover_3,
-                                         by = "cell")
+occurrences_turnover <- left_join(occurrences_turnover_a,
+                                  occurrences_turnover_3,
+                                  by = "cell")
 
 
 # 5. CALCULATE TURNOVER -----
@@ -302,25 +312,25 @@ calculate_turnover <- function(species1, species2) {
   return((unique1 + unique2) / total_occurrences)
 }
 
-## 5.2. Calculate turnover in intensification grids for each period of change ----
-#First period = turnover between "_1997.2000" and "_2006.2009"
-#Second period = turnover between "_2003.2006" and "_2012.2015"
-#Third period = turnover between "_2009.2012" and "_2015.2018"
+## 5.2. Calculate turnover for each period of change ----
+# First period = turnover between "_1997.2000" and "_2006.2009"
+# Second period = turnover between "_2003.2006" and "_2012.2015"
+# Third period = turnover between "_2009.2012" and "_2015.2018"
 
 # First period (2000 to 2006)
-intens_occurrences_turnover$turnover2000.2006 <- mapply(calculate_turnover,
-                                                        intens_occurrences_turnover$species_1997.2000,
-                                                        intens_occurrences_turnover$species_2006.2009)
+occurrences_turnover$turnover2000.2006 <- mapply(calculate_turnover,
+                                                 occurrences_turnover$species_1997.2000,
+                                                 occurrences_turnover$species_2006.2009)
 
 # Second period (2006 to 2012)
-intens_occurrences_turnover$turnover2006.2012 <- mapply(calculate_turnover,
-                                                        intens_occurrences_turnover$species_2003.2006,
-                                                        intens_occurrences_turnover$species_2012.2015)
+occurrences_turnover$turnover2006.2012 <- mapply(calculate_turnover,
+                                                 occurrences_turnover$species_2003.2006,
+                                                 occurrences_turnover$species_2012.2015)
 
 # Third period (2012 to 2018)
-intens_occurrences_turnover$turnover2012.2018 <- mapply(calculate_turnover,
-                                                        intens_occurrences_turnover$species_2009.2012,
-                                                        intens_occurrences_turnover$species_2015.2018)
+occurrences_turnover$turnover2012.2018 <- mapply(calculate_turnover,
+                                                 occurrences_turnover$species_2009.2012,
+                                                 occurrences_turnover$species_2015.2018)
 
 # 6. CREATE DF WITH TURNOVER AND INTENSIFICATION VALUES ----
 
@@ -353,10 +363,10 @@ if (is.matrix(intens_values_2012.2018)) {
 }
 
 ## 6.3. Extract intensification values using the unique cell IDs ----
-intens_occurrences_turnover <- intens_occurrences_turnover |>
-  mutate(intens_2000.2006 = intens_values_2000.2006[intens_occurrences_turnover$cell[,1]],
-         intens_2006.2012 = intens_values_2006.2012[intens_occurrences_turnover$cell[,1]],
-         intens_2012.2018 = intens_values_2012.2018[intens_occurrences_turnover$cell[,1]])
+intens_occurrences_turnover <- occurrences_turnover |>
+  mutate(intens_2000.2006 = intens_values_2000.2006[occurrences_turnover$cell[,1]],
+         intens_2006.2012 = intens_values_2006.2012[occurrences_turnover$cell[,1]],
+         intens_2012.2018 = intens_values_2012.2018[occurrences_turnover$cell[,1]])
 
 ## 6.4. Write dataframe ----
 saveRDS(intens_occurrences_turnover,
@@ -373,7 +383,7 @@ intens_occurrences_turnover <- intens_occurrences_turnover |>
   filter_at(vars(turnover2000.2006, turnover2006.2012, turnover2012.2018),
             all_vars(!is.nan(.)))
 
-# Remove unneccessary columns
+# Remove unnecessary columns
 intens_occurrences_turnover <- intens_occurrences_turnover |>
   select(-c(species_1997.2000, geometry_1997.2000,
             species_2006.2009, geometry_2006.2009, 
@@ -402,7 +412,7 @@ intens_turnover_long <- intens_occurrences_turnover |>
   select(-c(turnover_year, cell, new_cell))
 
 
-# Create separate df for the land cover changes
+# Create separate df for intensification (land cover)
 intens_long <- intens_occurrences_turnover |>
   #select only the turnover columns
   select(c(cell, intens_2000.2006, intens_2006.2012,
@@ -412,16 +422,16 @@ intens_long <- intens_occurrences_turnover |>
     cols = "intens_2000.2006":"intens_2012.2018",
     names_to = "intensification_year",
     values_to = "intensification_amount") |>
-  #change cover_change_year value to only contain the year
+  #change intensification_year value to only contain the year
   mutate(year = case_when(intensification_year == "intens_2000.2006" ~ "2000.2006",
                           intensification_year == "intens_2006.2012" ~ "2006.2012",
                           intensification_year == "intens_2012.2018" ~ "2012.2018"),
          new_cell = cell$U2006_CLC2000_V2020_20u1,
          ID = paste(new_cell, year, sep = "_")) |>
-  #remove unnecessary cover_change_year column
+  #remove unnecessary columns
   select(-c(cell, new_cell))
 
-# Merge the turnover_long and land_cover_change dfs
+# Merge the intens_turnover_long and intens_long dfs
 intens_turnover <- merge(intens_turnover_long, intens_long,
                          by = "ID")
 
@@ -446,7 +456,7 @@ new_labels <- c("2000.2006" = "2000 - 2006",
                 "2006.2012" = "2006 - 2012",
                 "2012.2018" = "2012 - 2018")
 
-# Plot scatterplot with facetwrap
+# Plot scatter plot with facetwrap
 ggplot(intens_turnover, aes(x = intensification_amount, y= turnover,
                             color = year))+
   geom_point(size = 2)+
@@ -494,10 +504,10 @@ if (is.matrix(extens_values_2012.2018)) {
 }
 
 ## 8.3. Extract extensification values using the unique cell IDs ----
-extens_occurrences_turnover <- intens_occurrences_turnover |>
-  mutate(extens_2000.2006 = extens_values_2000.2006[intens_occurrences_turnover$cell[,1]],
-         extens_2006.2012 = extens_values_2006.2012[intens_occurrences_turnover$cell[,1]],
-         extens_2012.2018 = extens_values_2012.2018[intens_occurrences_turnover$cell[,1]])
+extens_occurrences_turnover <- occurrences_turnover |>
+  mutate(extens_2000.2006 = extens_values_2000.2006[occurrences_turnover$cell[,1]],
+         extens_2006.2012 = extens_values_2006.2012[occurrences_turnover$cell[,1]],
+         extens_2012.2018 = extens_values_2012.2018[occurrences_turnover$cell[,1]])
 
 ## 8.4. Write dataframe ----
 saveRDS(extens_occurrences_turnover,
@@ -552,13 +562,13 @@ extens_long <- extens_occurrences_turnover |>
     cols = "extens_2000.2006":"extens_2012.2018",
     names_to = "extensification_year",
     values_to = "extensification_amount") |>
-  #change cover_change_year value to only contain the year
+  #change extensification_year value to only contain the year
   mutate(year = case_when(extensification_year == "extens_2000.2006" ~ "2000.2006",
                           extensification_year == "extens_2006.2012" ~ "2006.2012",
                           extensification_year == "extens_2012.2018" ~ "2012.2018"),
          new_cell = cell$U2006_CLC2000_V2020_20u1,
          ID = paste(new_cell, year, sep = "_")) |>
-  #remove unnecessary cover_change_year column
+  #remove unnecessary columns
   select(-c(cell, new_cell))
 
 # Merge the extens_turnover_long and extens_long dfs
@@ -638,6 +648,54 @@ ggsave(filename = here("figures",
                        "intensification_extensification_turnover.svg"),
        plot = combined_plot)
 
+# 10. HISTOGRAMS OF TURNOVER, INTENSIFICATION AND EXTENSIFICATION VALUES ----
 
+## 10.1. Histogram of turnover values ----
+
+# Plot histogram
+ggplot(extens_turnover, aes(x = turnover, fill = year))+
+  geom_histogram(color = "black", alpha = 0.6, position = "identity")+
+  scale_fill_manual(values=c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  facet_wrap(~year, labeller = labeller(year = new_labels))+
+  xlab("Turnover Value")+
+  ylab("Count")+
+  theme_classic()+
+  theme(legend.position = "none")
+
+# Save histogram to file
+ggsave(here("figures",
+            "intensification_turnover_histogram.svg"))
+
+## 10.2. Histogram of intensification values ----
+
+# Plot histogram
+ggplot(intens_turnover, aes(x = intensification_amount, fill = year))+
+  geom_histogram(color = "black", alpha = 0.6, position = "identity")+
+  scale_fill_manual(values=c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  facet_wrap(~year, labeller = labeller(year = new_labels))+
+  xlab("Intensification Value")+
+  ylab("Count")+
+  theme_classic()+
+  theme(legend.position = "none")
+
+# Save histogram to file
+ggsave(here("figures",
+            "intensification_histogram.svg"))
+
+## 10.3. Histogram of extensification values ----
+
+# Plot histogram
+ggplot(extens_turnover, aes(x = extensification_amount, fill = year))+
+  geom_histogram(color = "black", alpha = 0.6, position = "identity")+
+  scale_fill_manual(values=c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  facet_wrap(~year, labeller = labeller(year = new_labels))+
+  xlab("Intensification Value")+
+  ylab("Count")+
+  theme_classic()+
+  theme(legend.position = "none")
+
+# Save histogram to file
+ggsave(here("figures",
+            "extensification_histogram.svg"))
 
 # END OF SCRIPT #       
