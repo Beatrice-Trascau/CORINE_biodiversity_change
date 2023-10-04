@@ -462,8 +462,8 @@ ggplot(intens_turnover, aes(x = intensification_amount, y= turnover,
   geom_point(size = 2)+
   geom_smooth()+
   facet_wrap(~year, labeller = labeller(year = new_labels))+
-  ylab("Intensification")+
-  xlab("Turnover")+
+  xlab("Intensification")+
+  ylab("Turnover")+
   scale_color_manual(values = c("#6DD3CE", "#C8E9A0", "#F7A278"))+
   theme_classic()+
   theme(legend.position = "none")
@@ -602,8 +602,8 @@ ggplot(extens_turnover, aes(x = extensification_amount, y= turnover,
   geom_point(size = 2)+
   geom_smooth()+
   facet_wrap(~year, labeller = labeller(year = new_labels))+
-  ylab("Extensification")+
-  xlab("Turnover")+
+  xlab("Extensification")+
+  ylab("Turnover")+
   scale_color_manual(values = c("#6DD3CE", "#C8E9A0", "#F7A278"))+
   theme_classic()+
   theme(legend.position = "none")
@@ -620,8 +620,8 @@ intensification_plot <- ggplot(intens_turnover, aes(x = intensification_amount, 
   geom_point(size = 2)+
   geom_smooth()+
   facet_wrap(~year, labeller = labeller(year = new_labels))+
-  ylab("Intensification")+
-  xlab("Turnover")+
+  xlab("Intensification")+
+  ylab("Turnover")+
   scale_color_manual(values = c("#6DD3CE", "#C8E9A0", "#F7A278"))+
   theme_classic()+
   theme(legend.position = "none")
@@ -632,8 +632,8 @@ extensification_plot <- ggplot(extens_turnover, aes(x = extensification_amount, 
   geom_point(size = 2)+
   geom_smooth()+
   facet_wrap(~year, labeller = labeller(year = new_labels))+
-  ylab("Extensification")+
-  xlab("Turnover")+
+  xlab("Extensification")+
+  ylab("Turnover")+
   scale_color_manual(values = c("#6DD3CE", "#C8E9A0", "#F7A278"))+
   theme_classic()+
   theme(legend.position = "none")
