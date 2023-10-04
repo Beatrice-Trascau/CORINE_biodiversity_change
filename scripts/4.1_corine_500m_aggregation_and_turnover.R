@@ -12,6 +12,10 @@ library(terra)
 library(data.table)
 library(dplyr)
 library(sf)
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(cowplot)
 
 # 1. LOAD DATA ----
 
@@ -283,9 +287,9 @@ occurrences_turnover_a <- left_join(occurrences_turnover_1,
                                     by = "cell")
 
 
-intens_occurrences_tunover <- left_join(occurrences_turnover_a,
-                                        occurrences_turnover_3,
-                                        by = "cell")
+intens_occurrences_turnover <- left_join(occurrences_turnover_a,
+                                         occurrences_turnover_3,
+                                         by = "cell")
 
 
 # 5. CALCULATE TURNOVER -----
@@ -304,32 +308,32 @@ calculate_turnover <- function(species1, species2) {
 #Third period = turnover between "_2009.2012" and "_2015.2018"
 
 # First period (2000 to 2006)
-intens_occurrences_tunover$turnover2000.2006 <- mapply(calculate_turnover,
-                                                       intens_occurrences_tunover$species_1997.2000,
-                                                       intens_occurrences_tunover$species_2006.2009)
+intens_occurrences_turnover$turnover2000.2006 <- mapply(calculate_turnover,
+                                                        intens_occurrences_turnover$species_1997.2000,
+                                                        intens_occurrences_turnover$species_2006.2009)
 
 # Second period (2006 to 2012)
-intens_occurrences_tunover$turnover2006.2012 <- mapply(calculate_turnover,
-                                                       intens_occurrences_tunover$species_2003.2006,
-                                                       intens_occurrences_tunover$species_2012.2015)
+intens_occurrences_turnover$turnover2006.2012 <- mapply(calculate_turnover,
+                                                        intens_occurrences_turnover$species_2003.2006,
+                                                        intens_occurrences_turnover$species_2012.2015)
 
 # Third period (2012 to 2018)
-intens_occurrences_tunover$turover2012.2018 <- mapply(calculate_turnover,
-                                                      intens_occurrences_tunover$species_2009.2012,
-                                                      intens_occurrences_tunover$species_2015.2018)
+intens_occurrences_turnover$turnover2012.2018 <- mapply(calculate_turnover,
+                                                        intens_occurrences_turnover$species_2009.2012,
+                                                        intens_occurrences_turnover$species_2015.2018)
 
 # 6. CREATE DF WITH TURNOVER AND INTENSIFICATION VALUES ----
 
 ## 6.1. Extract intensification values ----
 
 # First period (2000 to 2006)
-intens_values_2000.2006 <- values(intens_00_06)
+intens_values_2000.2006 <- values(aggregated_intens_00_06)
 
 # Second period (2006 to 2012)
-intens_values_2006.2012 <- values(intens_06_12)
+intens_values_2006.2012 <- values(aggregated_intens_06_12)
 
 # Third period (2012 to 2018)
-intens_values_2012.2018 <- values(intens_12_18)
+intens_values_2012.2018 <- values(aggregated_intens_12_18)
 
 ## 6.2. Convert values to vector ----
 
@@ -349,11 +353,291 @@ if (is.matrix(intens_values_2012.2018)) {
 }
 
 ## 6.3. Extract intensification values using the unique cell IDs ----
-occurrences_turnover <- occurrences_turnover |>
-  mutate(intens_2000.2006 = intens_values_2000.2006[occurrences_turnover$cell[,1]],
-         intens_2006.2012 = intens_values_2006.2012[occurrences_turnover$cell[,1]],
-         intens_2012.2018 = intens_values_2012.2018[occurrences_turnover$cell[,1]])
+intens_occurrences_turnover <- intens_occurrences_turnover |>
+  mutate(intens_2000.2006 = intens_values_2000.2006[intens_occurrences_turnover$cell[,1]],
+         intens_2006.2012 = intens_values_2006.2012[intens_occurrences_turnover$cell[,1]],
+         intens_2012.2018 = intens_values_2012.2018[intens_occurrences_turnover$cell[,1]])
 
 ## 6.4. Write dataframe ----
-saveRDS(intens_occurrences_tunover,
+saveRDS(intens_occurrences_turnover,
         here("data", "intensification_occurrence_turnover.rds"))
+
+# 7. VISUALISE RELATIONSHIP BETWEEN INTENSIFICATION AND TURNOVER ----
+
+## 7.1. Prepare data ----
+
+# Remove rows with NA for intensification and NaN for turnover
+intens_occurrences_turnover <- intens_occurrences_turnover |>
+  filter_at(vars(intens_2000.2006, intens_2006.2012, intens_2012.2018),
+            all_vars(!is.na(.))) |>
+  filter_at(vars(turnover2000.2006, turnover2006.2012, turnover2012.2018),
+            all_vars(!is.nan(.)))
+
+# Remove unneccessary columns
+intens_occurrences_turnover <- intens_occurrences_turnover |>
+  select(-c(species_1997.2000, geometry_1997.2000,
+            species_2006.2009, geometry_2006.2009, 
+            species_2003.2006, geometry_2003.2006,
+            species_2012.2015, geometry_2012.2015,
+            species_2009.2012, geometry_2009.2012,
+            species_2015.2018, geometry_2015.2018))
+
+# Create separate df for turnover
+intens_turnover_long <- intens_occurrences_turnover |>
+  #select only the turnover columns
+  select(c(cell, turnover2000.2006, turnover2006.2012,
+           turnover2012.2018)) |>
+  #convert to long format
+  pivot_longer(
+    cols = "turnover2000.2006":"turnover2012.2018",
+    names_to = "turnover_year",
+    values_to = "turnover") |>
+  #change turnover_year value to only contain the year
+  mutate(year = case_when(turnover_year == "turnover2000.2006" ~ "2000.2006",
+                          turnover_year == "turnover2006.2012" ~ "2006.2012",
+                          turnover_year == "turnover2012.2018" ~ "2012.2018"),
+         new_cell = cell$U2006_CLC2000_V2020_20u1,
+         ID = paste(new_cell, year, sep = "_")) |>
+  #remove unnecessary turnover_year column
+  select(-c(turnover_year, cell, new_cell))
+
+
+# Create separate df for the land cover changes
+intens_long <- intens_occurrences_turnover |>
+  #select only the turnover columns
+  select(c(cell, intens_2000.2006, intens_2006.2012,
+           intens_2012.2018)) |>
+  #convert to long format
+  pivot_longer(
+    cols = "intens_2000.2006":"intens_2012.2018",
+    names_to = "intensification_year",
+    values_to = "intensification_amount") |>
+  #change cover_change_year value to only contain the year
+  mutate(year = case_when(intensification_year == "intens_2000.2006" ~ "2000.2006",
+                          intensification_year == "intens_2006.2012" ~ "2006.2012",
+                          intensification_year == "intens_2012.2018" ~ "2012.2018"),
+         new_cell = cell$U2006_CLC2000_V2020_20u1,
+         ID = paste(new_cell, year, sep = "_")) |>
+  #remove unnecessary cover_change_year column
+  select(-c(cell, new_cell))
+
+# Merge the turnover_long and land_cover_change dfs
+intens_turnover <- merge(intens_turnover_long, intens_long,
+                         by = "ID")
+
+# Check cols
+colnames(intens_turnover)
+
+#Check that year.x & year.y are the same
+setequal(intens_turnover$year.x, intens_turnover$year.y) #TRUE
+
+#Remove year.x and year.y columns
+intens_turnover <- intens_turnover |>
+  mutate(year = year.y) |>
+  select(-year.x)
+
+## 7.2. Plot relationship between intensification and turnover ----
+
+# Convert year column to factor
+intens_turnover$year <- as.factor(intens_turnover$year)
+
+# Create new facet labels
+new_labels <- c("2000.2006" = "2000 - 2006",
+                "2006.2012" = "2006 - 2012",
+                "2012.2018" = "2012 - 2018")
+
+# Plot scatterplot with facetwrap
+ggplot(intens_turnover, aes(x = intensification_amount, y= turnover,
+                            color = year))+
+  geom_point(size = 2)+
+  geom_smooth()+
+  facet_wrap(~year, labeller = labeller(year = new_labels))+
+  ylab("Intensification")+
+  xlab("Turnover")+
+  scale_color_manual(values = c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  theme_classic()+
+  theme(legend.position = "none")
+
+# Save plot as .svg
+ggsave(here("figures",
+            "turnover_intensification.svg"))
+
+
+# 8. CREATE DF WITH TURNOVER AND EXTENSIFICATION VALUES ----
+
+## 8.1. Extract extensification values ----
+
+# First period (2000 to 2006)
+extens_values_2000.2006 <- values(aggregated_extens_00_06)
+
+# Second period (2006 to 2012)
+extens_values_2006.2012 <- values(aggregated_extens_06_12)
+
+# Third period (2012 to 2018)
+extens_values_2012.2018 <- values(aggregated_extens_12_18)
+
+## 8.2. Convert values to vector ----
+
+# First period (2000 to 2006)
+if (is.matrix(extens_values_2000.2006)) {
+  extens_values_2000.2006 <- as.vector(extens_values_2000.2006)
+}
+
+# Second period (2006 to 2012)
+if (is.matrix(extens_values_2006.2012)) {
+  extens_values_2006.2012 <- as.vector(extens_values_2006.2012)
+}
+
+# Third period (2012 to 2018)
+if (is.matrix(extens_values_2012.2018)) {
+  extens_values_2012.2018 <- as.vector(extens_values_2012.2018)
+}
+
+## 8.3. Extract extensification values using the unique cell IDs ----
+extens_occurrences_turnover <- intens_occurrences_turnover |>
+  mutate(extens_2000.2006 = extens_values_2000.2006[intens_occurrences_turnover$cell[,1]],
+         extens_2006.2012 = extens_values_2006.2012[intens_occurrences_turnover$cell[,1]],
+         extens_2012.2018 = extens_values_2012.2018[intens_occurrences_turnover$cell[,1]])
+
+## 8.4. Write dataframe ----
+saveRDS(extens_occurrences_turnover,
+        here("data", "extensification_occurrence_turnover.rds"))
+
+# 9. VISUALISE RELATIONSHIP BETWEEN EXTENSIFICATION AND TURNOVER ----
+
+## 9.1. Prepare data ----
+
+# Remove rows with NA for extensification and NaN for turnover
+extens_occurrences_turnover <- extens_occurrences_turnover |>
+  filter_at(vars(extens_2000.2006, extens_2006.2012, extens_2012.2018),
+            all_vars(!is.na(.))) |>
+  filter_at(vars(turnover2000.2006, turnover2006.2012, turnover2012.2018),
+            all_vars(!is.nan(.)))
+
+# Remove unneccessary columns
+extens_occurrences_turnover <- extens_occurrences_turnover |>
+  select(-c(species_1997.2000, geometry_1997.2000,
+            species_2006.2009, geometry_2006.2009, 
+            species_2003.2006, geometry_2003.2006,
+            species_2012.2015, geometry_2012.2015,
+            species_2009.2012, geometry_2009.2012,
+            species_2015.2018, geometry_2015.2018))
+
+# Create separate df for turnover
+extens_turnover_long <- extens_occurrences_turnover |>
+  #select only the turnover columns
+  select(c(cell, turnover2000.2006, turnover2006.2012,
+           turnover2012.2018)) |>
+  #convert to long format
+  pivot_longer(
+    cols = "turnover2000.2006":"turnover2012.2018",
+    names_to = "turnover_year",
+    values_to = "turnover") |>
+  #change turnover_year value to only contain the year
+  mutate(year = case_when(turnover_year == "turnover2000.2006" ~ "2000.2006",
+                          turnover_year == "turnover2006.2012" ~ "2006.2012",
+                          turnover_year == "turnover2012.2018" ~ "2012.2018"),
+         new_cell = cell$U2006_CLC2000_V2020_20u1,
+         ID = paste(new_cell, year, sep = "_")) |>
+  #remove unnecessary turnover_year column
+  select(-c(turnover_year, cell, new_cell))
+
+# Create separate df for the extensification values
+extens_long <- extens_occurrences_turnover |>
+  #select only the turnover columns
+  select(c(cell, extens_2000.2006, extens_2006.2012,
+           extens_2012.2018)) |>
+  #convert to long format
+  pivot_longer(
+    cols = "extens_2000.2006":"extens_2012.2018",
+    names_to = "extensification_year",
+    values_to = "extensification_amount") |>
+  #change cover_change_year value to only contain the year
+  mutate(year = case_when(extensification_year == "extens_2000.2006" ~ "2000.2006",
+                          extensification_year == "extens_2006.2012" ~ "2006.2012",
+                          extensification_year == "extens_2012.2018" ~ "2012.2018"),
+         new_cell = cell$U2006_CLC2000_V2020_20u1,
+         ID = paste(new_cell, year, sep = "_")) |>
+  #remove unnecessary cover_change_year column
+  select(-c(cell, new_cell))
+
+# Merge the extens_turnover_long and extens_long dfs
+extens_turnover <- merge(extens_turnover_long, extens_long,
+                         by = "ID")
+
+# Check cols
+colnames(extens_turnover)
+
+#Check that year.x & year.y are the same
+setequal(extens_turnover$year.x, extens_turnover$year.y) #TRUE
+
+#Remove year.x and year.y columns
+extens_turnover <- extens_turnover |>
+  mutate(year = year.y) |>
+  select(-year.x)
+
+## 9.2. Plot relationship between extensification and turnover ----
+
+# Convert year column to factor
+extens_turnover$year <- as.factor(extens_turnover$year)
+
+# Create new facet labels
+new_labels <- c("2000.2006" = "2000 - 2006",
+                "2006.2012" = "2006 - 2012",
+                "2012.2018" = "2012 - 2018")
+
+# Plot scatterplot with facetwrap
+ggplot(extens_turnover, aes(x = extensification_amount, y= turnover,
+                            color = year))+
+  geom_point(size = 2)+
+  geom_smooth()+
+  facet_wrap(~year, labeller = labeller(year = new_labels))+
+  ylab("Extensification")+
+  xlab("Turnover")+
+  scale_color_manual(values = c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  theme_classic()+
+  theme(legend.position = "none")
+
+# Save plot as .svg
+ggsave(here("figures",
+            "turnover_extensification.svg"))
+
+## 9.3. Combine intensification and extensification plots ---
+
+# Intensification figure
+intensification_plot <- ggplot(intens_turnover, aes(x = intensification_amount, y= turnover,
+                                                    color = year))+
+  geom_point(size = 2)+
+  geom_smooth()+
+  facet_wrap(~year, labeller = labeller(year = new_labels))+
+  ylab("Intensification")+
+  xlab("Turnover")+
+  scale_color_manual(values = c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  theme_classic()+
+  theme(legend.position = "none")
+
+# Extenification figure
+extensification_plot <- ggplot(extens_turnover, aes(x = extensification_amount, y= turnover,
+                                                    color = year))+
+  geom_point(size = 2)+
+  geom_smooth()+
+  facet_wrap(~year, labeller = labeller(year = new_labels))+
+  ylab("Extensification")+
+  xlab("Turnover")+
+  scale_color_manual(values = c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  theme_classic()+
+  theme(legend.position = "none")
+
+# Combine intenification and extesification figure
+combined_plot <- plot_grid(intensification_plot, extensification_plot, 
+                           labels = c('A', 'B'), label_size = 12,
+                           ncol = 1)
+
+# Save combined plot
+ggsave(filename = here("figures",
+                       "intensification_extensification_turnover.svg"),
+       plot = combined_plot)
+
+
+
+# END OF SCRIPT #       
