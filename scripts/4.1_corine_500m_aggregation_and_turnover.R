@@ -23,7 +23,6 @@ norway_corine <- rast(here("data",
 clean_occurrences <- fread(here::here("data", 
                                       "cleaned_occurrences.txt"))
 
-
 # 2. AGGREGGATE LAND COVER CHANGES TO 500M ----
 
 ## 2.1. Calculate land cover changes ----
@@ -45,11 +44,11 @@ corine_2012_2018[is.na(corine_2012_2018)] <- -9999
 ## 2.2. Create "intensification" rasters ----
 
 # Intensification = Nature loss = includes the following land cover transitions:
-  # Urbanisation (=79, 102, 249, 379, 589, 710), 
-  # Intensification (=-79, -102, 23, 170, 147, 300, 277, 510, 487, 631, 608), 
-  # Forest Harvesting (= the old "Forestry" category = -340)
-  # Deforestation (=-130, -461, 210)
-  # All above values will be concerted to 1, everything else will be converted to 0
+# Urbanisation (=79, 102, 249, 379, 589, 710), 
+# Intensification (=-79, -102, 23, 170, 147, 300, 277, 510, 487, 631, 608), 
+# Forest Harvesting (= the old "Forestry" category = -340)
+# Deforestation (=-130, -461, 210)
+# All above values will be concerted to 1, everything else will be converted to 0
 
 # Intensification in 2000 - 2006 land cover transitions
 intens_00_06 <- terra::ifel(corine_2000_2006 == -9999,  NA, 
@@ -74,17 +73,17 @@ intens_12_18 <- terra::ifel(corine_2012_2018 == -9999,  NA,
 
 ## 2.3. Create "extenification" rasters ----
 # Exrensification = Nature gain = includes the following land cover transitions:
- # Succession (=-249, -379, -589, -170, -300,-510, -147, -277, -487, 130,-210, 461, 331, 121)
- # Forest Succession (=340)
- # Restoration (=-710)
- # Extensification (=-79, -102, 23, 170, 147,300, 277, 510, 487, 631, 608)
+# Succession (=-249, -379, -589, -170, -300,-510, -147, -277, -487, 130,-210, 461, 331, 121)
+# Forest Succession (=340)
+# Restoration (=-710)
+# Extensification (=-79, -102, 23, 170, 147,300, 277, 510, 487, 631, 608)
 
 # Extensification in 2000 - 2006 land cover transitions
 extens_00_06 <- terra::ifel(corine_2000_2006 == -9999, NA,
                             ifel(corine_2000_2006 %in% c(-249, -379, -589, -170, -300,-510, -147, 
-                                   -277, -487, 130,-210, 461, 331, 121,
-                                   340, -710, -79, -102, 23, 170, 147,
-                                   300, 277, 510, 487, 631, 608), 1, 0))
+                                                         -277, -487, 130,-210, 461, 331, 121,
+                                                         340, -710, -79, -102, 23, 170, 147,
+                                                         300, 277, 510, 487, 631, 608), 1, 0))
 
 
 # Extensification in 2006 - 2012 land cover transitions
@@ -113,7 +112,7 @@ aggregated_intens_06_12 <- terra::aggregate(intens_06_12, fact = 5,
                                             fun = sum)
 
 # Intensification in 2012 - 2018 
-aggregated_intens_06_12 <- terra::aggregate(intens_06_12, fact = 5,
+aggregated_intens_12_18 <- terra::aggregate(intens_12_18, fact = 5,
                                             fun = sum)
 
 # Extensificatin in 2000 - 2006
@@ -158,7 +157,7 @@ land_cover_id[] <- 1:ncell(aggregated_extens[[1]])
 
 # 3. PREPARE OCCURRENCES FOR TURNOVER ANALYSIS -----
 
-## 3.1. Subset occurrence records df for each period of "before" and "after" change ----
+## 3.1. Subset occurrence records df for each period of "before" and "after" change
 
 #N.B: Periods pf change are:
 #First period of land cover change: 2000 to 2006; BEFORE Change = 1997-2000, AFTER Change = 2006-2009
@@ -186,7 +185,7 @@ occurrences2009.2012 <- clean_occurrences |>
 occurrences2015.2018 <- clean_occurrences |>
   filter(year %in% c(2015:2018)) #After change = 2015-2018
 
-## 3.2. Convert occurrences to sf objects ----
+## 3.2. Convert occurrences to sf objects and set CRS ----
 
 # Put all occurrence dfs created above in a list
 occurrence_list <- list("1997.2000" = occurrences1997.2000,
@@ -203,7 +202,6 @@ for(name in names(occurrence_list)){
                   coords = c("decimalLongitude", "decimalLatitude"),
                   crs = 4326))
 }
-
 
 ## 3.3. Set CRS for sf objects to match CORINE's CRS ----
 
@@ -226,7 +224,7 @@ for(name in sf_names){
 
 ## 4.1. Assign species to land cover cells for each time step ----
 
-# Create a list of sf object names 
+# Create a list of sf object names ----
 sf_names <- c("occurrences_1997.2000_sf", "occurrences_2006.2009_sf", 
               "occurrences_2003.2006_sf", "occurrences_2012.2015_sf", 
               "occurrences_2009.2012_sf", "occurrences_2015.2018_sf")
@@ -285,9 +283,9 @@ occurrences_turnover_a <- left_join(occurrences_turnover_1,
                                     by = "cell")
 
 
-occurrences_turnover <- left_join(occurrences_turnover_a,
-                                  occurrences_turnover_3,
-                                  by = "cell")
+intens_occurrences_tunover <- left_join(occurrences_turnover_a,
+                                        occurrences_turnover_3,
+                                        by = "cell")
 
 
 # 5. CALCULATE TURNOVER -----
@@ -306,16 +304,56 @@ calculate_turnover <- function(species1, species2) {
 #Third period = turnover between "_2009.2012" and "_2015.2018"
 
 # First period (2000 to 2006)
-occurrences_turnover$turover2000.2006 <- mapply(calculate_turnover,
-                                                data$species_1997.2000,
-                                                data$species_2006.2009)
+intens_occurrences_tunover$turnover2000.2006 <- mapply(calculate_turnover,
+                                                       intens_occurrences_tunover$species_1997.2000,
+                                                       intens_occurrences_tunover$species_2006.2009)
 
 # Second period (2006 to 2012)
-occurrences_turnover$turover2006.2012 <- mapply(calculate_turnover,
-                                                data$species_2003.2006,
-                                                data$species_2012.2015)
+intens_occurrences_tunover$turnover2006.2012 <- mapply(calculate_turnover,
+                                                       intens_occurrences_tunover$species_2003.2006,
+                                                       intens_occurrences_tunover$species_2012.2015)
 
 # Third period (2012 to 2018)
-occurrences_turnover$turover2012.2018 <- mapply(calculate_turnover,
-                                                data$species_2009.2012,
-                                                data$species_2015.2018)
+intens_occurrences_tunover$turover2012.2018 <- mapply(calculate_turnover,
+                                                      intens_occurrences_tunover$species_2009.2012,
+                                                      intens_occurrences_tunover$species_2015.2018)
+
+# 6. CREATE DF WITH TURNOVER AND INTENSIFICATION VALUES ----
+
+## 6.1. Extract intensification values ----
+
+# First period (2000 to 2006)
+intens_values_2000.2006 <- values(intens_00_06)
+
+# Second period (2006 to 2012)
+intens_values_2006.2012 <- values(intens_06_12)
+
+# Third period (2012 to 2018)
+intens_values_2012.2018 <- values(intens_12_18)
+
+## 6.2. Convert values to vector ----
+
+# First period (2000 to 2006)
+if (is.matrix(intens_values_2000.2006)) {
+  intens_values_2000.2006 <- as.vector(intens_values_2000.2006)
+}
+
+# Second period (2006 to 2012)
+if (is.matrix(intens_values_2006.2012)) {
+  intens_values_2006.2012 <- as.vector(intens_values_2006.2012)
+}
+
+# Third period (2012 to 2018)
+if (is.matrix(intens_values_2012.2018)) {
+  intens_values_2012.2018 <- as.vector(intens_values_2012.2018)
+}
+
+## 6.3. Extract intensification values using the unique cell IDs ----
+occurrences_turnover <- occurrences_turnover |>
+  mutate(intens_2000.2006 = intens_values_2000.2006[occurrences_turnover$cell[,1]],
+         intens_2006.2012 = intens_values_2006.2012[occurrences_turnover$cell[,1]],
+         intens_2012.2018 = intens_values_2012.2018[occurrences_turnover$cell[,1]])
+
+## 6.4. Write dataframe ----
+saveRDS(intens_occurrences_tunover,
+        here("data", "intensification_occurrence_turnover.rds"))
