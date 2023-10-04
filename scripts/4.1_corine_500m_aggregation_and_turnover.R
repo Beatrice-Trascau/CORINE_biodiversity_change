@@ -226,7 +226,7 @@ for(name in sf_names){
 
 ## 4.1. Assign species to land cover cells for each time step ----
 
-# Create a list of sf object names ----
+# Create a list of sf object names 
 sf_names <- c("occurrences_1997.2000_sf", "occurrences_2006.2009_sf", 
               "occurrences_2003.2006_sf", "occurrences_2012.2015_sf", 
               "occurrences_2009.2012_sf", "occurrences_2015.2018_sf")
@@ -260,13 +260,62 @@ for (i in seq_along(sf_names)) {
 }
 
 ## 4.3. Join data for different timesteps ----
-occurrences_turnover <- left_join(as.data.frame(occurrences_1997.2000_grouped),
-                                  as.data.frame(occurrences_2006.2009_grouped),
-                                  as.data.frame(occurrences_2003.2006_grouped),
-                                  as.data.frame(occurrences_2012.2015_grouped),
-                                  as.data.frame(occurrences_2009.2012_grouped),
-                                  as.data.frame(occurrences_2015.2018_grouped),
-                                  by = "cell",
-                                  suffix = c("_1997.2000", "_2006.2009",
-                                             "_2003.2006", "_2012.2015",
-                                             "_2009.2012", "_2015.2018"))
+
+# Join data 2 by two, based on the corine land cover layer they were created with/from
+occurrences_turnover_1 <- left_join(as.data.frame(occurrences_1997.2000_grouped),
+                                    as.data.frame(occurrences_2006.2009_grouped),
+                                    by = "cell",
+                                    suffix = c("_1997.2000", "_2006.2009"))
+
+
+occurrences_turnover_2 <- left_join(as.data.frame(occurrences_2003.2006_grouped),
+                                    as.data.frame(occurrences_2012.2015_grouped),
+                                    by = "cell",
+                                    suffix = c("_2003.2006", "_2012.2015"))
+
+
+occurrences_turnover_3 <- left_join(as.data.frame(occurrences_2009.2012_grouped),
+                                    as.data.frame(occurrences_2015.2018_grouped),
+                                    by = "cell",
+                                    suffix = c("_2009.2012", "_2015.2018"))
+
+# Combine all 3 occurrence turnover dataframes in 1
+occurrences_turnover_a <- left_join(occurrences_turnover_1,
+                                    occurrences_turnover_2,
+                                    by = "cell")
+
+
+occurrences_turnover <- left_join(occurrences_turnover_a,
+                                  occurrences_turnover_3,
+                                  by = "cell")
+
+
+# 5. CALCULATE TURNOVER -----
+
+## 5.1. Write function to calculate turnover ----
+calculate_turnover <- function(species1, species2) {
+  unique1 <- length(setdiff(unlist(species1), unlist(species2)))
+  unique2 <- length(setdiff(unlist(species2), unlist(species1)))
+  total_occurrences <- length(unlist(species1)) + length(unlist(species2))
+  return((unique1 + unique2) / total_occurrences)
+}
+
+## 5.2. Calculate turnover in intensification grids for each period of change ----
+#First period = turnover between "_1997.2000" and "_2006.2009"
+#Second period = turnover between "_2003.2006" and "_2012.2015"
+#Third period = turnover between "_2009.2012" and "_2015.2018"
+
+# First period (2000 to 2006)
+occurrences_turnover$turover2000.2006 <- mapply(calculate_turnover,
+                                                data$species_1997.2000,
+                                                data$species_2006.2009)
+
+# Second period (2006 to 2012)
+occurrences_turnover$turover2006.2012 <- mapply(calculate_turnover,
+                                                data$species_2003.2006,
+                                                data$species_2012.2015)
+
+# Third period (2012 to 2018)
+occurrences_turnover$turover2012.2018 <- mapply(calculate_turnover,
+                                                data$species_2009.2012,
+                                                data$species_2015.2018)
