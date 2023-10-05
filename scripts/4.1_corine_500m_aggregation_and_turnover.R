@@ -698,4 +698,44 @@ ggplot(extens_turnover, aes(x = extensification_amount, fill = year))+
 ggsave(here("figures",
             "extensification_histogram.svg"))
 
+## 10.4. Histograms of intensification without 0 values ----
+
+# Subset df to remove rows with intensification = 0
+intens_turnover_non0 <- intens_turnover |>
+  filter(intensification_amount != 0)
+
+# Plot histogram
+ggplot(intens_turnover_non0, aes(x = intensification_amount, fill = year))+
+  geom_histogram(color = "black", alpha = 0.6, position = "identity")+
+  scale_fill_manual(values=c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  facet_wrap(~year, labeller = labeller(year = new_labels))+
+  xlab("Intensification Value")+
+  ylab("Count")+
+  theme_classic()+
+  theme(legend.position = "none")
+
+# Save histogram to file
+ggsave(here("figures",
+            "intensification_histogram_non0.svg"))
+
+## 10.5. Histograms of extensification without 0 values ----
+
+# Subset df to remove rows with extensification = 0
+extens_turnover_non0 <- extens_turnover |>
+  filter(extensification_amount != 0)
+
+# Plot histogram
+ggplot(extens_turnover_non0, aes(x = extensification_amount, fill = year))+
+  geom_histogram(color = "black", alpha = 0.6, position = "identity")+
+  scale_fill_manual(values=c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  facet_wrap(~year, labeller = labeller(year = new_labels))+
+  xlab("Extensification Value")+
+  ylab("Count")+
+  theme_classic()+
+  theme(legend.position = "none")
+
+# Save histogram to file
+ggsave(here("figures",
+            "extensificatin_histogram_non0.svg"))
+
 # END OF SCRIPT #       
