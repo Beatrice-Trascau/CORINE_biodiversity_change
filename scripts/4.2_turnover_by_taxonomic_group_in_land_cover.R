@@ -267,9 +267,10 @@ calculate_turnover <- function(species1, species2) {
   return((unique1 + unique2) / total_occurrences)
 }
 
-## 4.2. Turnover for 
-
-
+## 4.2. Calculate turnover for plants for each period of change----
+# First period = turnover between "_1997.2000" and "_2006.2009"
+# Second period = turnover between "_2003.2006" and "_2012.2015"
+# Third period = turnover between "_2009.2012" and "_2015.2018"
 
 
 
