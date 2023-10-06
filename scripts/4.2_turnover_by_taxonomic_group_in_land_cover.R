@@ -216,48 +216,139 @@ for (i in seq_along(sf_names)) {
 
 ## 3.3. Join data for different timesteps ----
 
-# Create a list of prefixes for each group
-prefixes <- c("plant_occurrences", "fungi_occurrences", "aves_occurrences", 
-              "mammalia_occurrences", "insecta_occurrences")
+### 3.3.1. Plants ----
+# Join data 2 by two, based on the corine land cover layer they were created with/from
+plant_turnover_1 <- left_join(as.data.frame(plant_occurrences_1997.2000_grouped),
+                              as.data.frame(plant_occurrences_2006.2009_grouped),
+                              by = "cell",
+                              suffix = c("_1997.2000", "_2006.2009"))
 
+plant_turnover_2 <- left_join(as.data.frame(plant_occurrences_2003.2006_grouped),
+                              as.data.frame(plant_occurrences_2012.2015_grouped),
+                              by = "cell",
+                              suffix = c("_2003.2006", "_2012.2015"))
 
-# Create a list of pairs of periods to help with the joining
-period_pairs <- list(
-  c("1997.2000", "2006.2009"),
-  c("2003.2006", "2012.2015"),
-  c("2009.2012", "2015.2018")
-)
+plant_turnover_3 <- left_join(as.data.frame(plant_occurrences_2009.2012_grouped),
+                              as.data.frame(plant_occurrences_2015.2018_grouped),
+                              by = "cell",
+                              suffix = c("_2009.2012", "_2015.2018"))
 
-# Join the dfs by looping through each prefix and period pair 
-for (prefix in prefixes) {
-  turnover_dfs <- list()
-  
-  for (pair in period_pairs) {
-    left_name <- paste0(prefix, "_", pair[1], "_grouped")
-    right_name <- paste0(prefix, "_", pair[2], "_grouped")
-    
-    turnover_df <- left_join(as.data.frame(get(left_name)),
-                             as.data.frame(get(right_name)),
+# Combine all 3 occurrence turnover dataframes in 1
+plant_turnover_4 <-  left_join(plant_turnover_1,
+                               plant_turnover_2,
+                               by = "cell")
+
+plant_turnover <- left_join(plant_turnover_4,
+                            plant_turnover_3,
+                            by = "cell")
+
+### 3.3.2. Fungi ----
+# Join data 2 by two, based on the corine land cover layer they were created with/from
+fungi_turnover_1 <- left_join(as.data.frame(fungi_occurrences_1997.2000_grouped),
+                              as.data.frame(fungi_occurrences_2006.2009_grouped),
+                              by = "cell",
+                              suffix = c("_1997.2000", "_2006.2009"))
+
+fungi_turnover_2 <- left_join(as.data.frame(fungi_occurrences_2003.2006_grouped),
+                              as.data.frame(fungi_occurrences_2012.2015_grouped),
+                              by = "cell",
+                              suffix = c("_2003.2006", "_2012.2015"))
+
+fungi_turnover_3 <- left_join(as.data.frame(fungi_occurrences_2009.2012_grouped),
+                              as.data.frame(fungi_occurrences_2015.2018_grouped),
+                              by = "cell",
+                              suffix = c("_2009.2012", "_2015.2018"))
+
+# Combine all 3 occurrence turnover dataframes in 1
+fungi_turnover_4 <-  left_join(fungi_turnover_1,
+                               fungi_turnover_2,
+                               by = "cell")
+
+fungi_turnover <- left_join(fungi_turnover_4,
+                            fungi_turnover_3,
+                            by = "cell")
+
+### 3.3.3. Aves ----
+# Join data 2 by two, based on the corine land cover layer they were created with/from
+aves_turnover_1 <- left_join(as.data.frame(aves_occurrences_1997.2000_grouped),
+                             as.data.frame(aves_occurrences_2006.2009_grouped),
                              by = "cell",
-                             suffix = c(paste0("_", pair[1]), paste0("_", pair[2])))
-    
-    turnover_dfs[[paste0(pair[1], "_", pair[2])]] <- turnover_df
-  }
-  
-  # Combine all 3 turnover dataframes for the current group
-  turnover_combined_a <- left_join(turnover_dfs[["1997.2000_2006.2009"]],
-                                   turnover_dfs[["2003.2006_2012.2015"]],
-                                   by = "cell")
-  
-  turnover_combined <- left_join(turnover_combined_a,
-                                 turnover_dfs[["2009.2012_2015.2018"]],
+                             suffix = c("_1997.2000", "_2006.2009"))
+
+aves_turnover_2 <- left_join(as.data.frame(aves_occurrences_2003.2006_grouped),
+                             as.data.frame(aves_occurrences_2012.2015_grouped),
+                             by = "cell",
+                             suffix = c("_2003.2006", "_2012.2015"))
+
+aves_turnover_3 <- left_join(as.data.frame(aves_occurrences_2009.2012_grouped),
+                             as.data.frame(aves_occurrences_2015.2018_grouped),
+                             by = "cell",
+                             suffix = c("_2009.2012", "_2015.2018"))
+
+# Combine all 3 occurrence turnover dataframes in 1
+aves_turnover_4 <-  left_join(aves_turnover_1,
+                              aves_turnover_2,
+                              by = "cell")
+
+aves_turnover <- left_join(aves_turnover_4,
+                           aves_turnover_3,
+                           by = "cell")
+
+### 3.3.4. Mammalia ----
+# Join data 2 by two, based on the corine land cover layer they were created with/from
+mammalia_turnover_1 <- left_join(as.data.frame(mammalia_occurrences_1997.2000_grouped),
+                                 as.data.frame(mammalia_occurrences_2006.2009_grouped),
+                                 by = "cell",
+                                 suffix = c("_1997.2000", "_2006.2009"))
+
+mammalia_turnover_2 <- left_join(as.data.frame(mammalia_occurrences_2003.2006_grouped),
+                                 as.data.frame(mammalia_occurrences_2012.2015_grouped),
+                                 by = "cell",
+                                 suffix = c("_2003.2006", "_2012.2015"))
+
+mammalia_turnover_3 <- left_join(as.data.frame(mammalia_occurrences_2009.2012_grouped),
+                                 as.data.frame(mammalia_occurrences_2015.2018_grouped),
+                                 by = "cell",
+                                 suffix = c("_2009.2012", "_2015.2018"))
+
+# Combine all 3 occurrence turnover dataframes in 1
+mammalia_turnover_4 <-  left_join(mammalia_turnover_1,
+                                  mammalia_turnover_2,
+                                  by = "cell")
+
+mammalia_turnover <- left_join(mammalia_turnover_4,
+                               mammalia_turnover_3,
+                               by = "cell")
+
+### 3.3.5. Insecta ----
+# Join data 2 by two, based on the corine land cover layer they were created with/from
+insecta_turnover_1 <- left_join(as.data.frame(insecta_occurrences_1997.2000_grouped),
+                                as.data.frame(insecta_occurrences_2006.2009_grouped),
+                                by = "cell",
+                                suffix = c("_1997.2000", "_2006.2009"))
+
+insecta_turnover_2 <- left_join(as.data.frame(insecta_occurrences_2003.2006_grouped),
+                                as.data.frame(insecta_occurrences_2012.2015_grouped),
+                                by = "cell",
+                                suffix = c("_2003.2006", "_2012.2015"))
+
+insecta_turnover_3 <- left_join(as.data.frame(insecta_occurrences_2009.2012_grouped),
+                                as.data.frame(insecta_occurrences_2015.2018_grouped),
+                                by = "cell",
+                                suffix = c("_2009.2012", "_2015.2018"))
+
+# Combine all 3 occurrence turnover dataframes in 1
+insecta_turnover_4 <-  left_join(insecta_turnover_1,
+                                 insecta_turnover_2,
                                  by = "cell")
-  
-  assign(paste0(prefix, "_turnover"), turnover_combined)
-}
+
+insecta_turnover <- left_join(insecta_turnover_4,
+                              insecta_turnover_3,
+                              by = "cell")
 
 
-# 4. CALCULATE TURNOVER FOR EACH GROUP----
+
+# 4. CALCULATE TURNOVER -----
 
 ## 4.1. Write function to calculate turnover ----
 calculate_turnover <- function(species1, species2) {
@@ -267,10 +358,92 @@ calculate_turnover <- function(species1, species2) {
   return((unique1 + unique2) / total_occurrences)
 }
 
-## 4.2. Calculate turnover for plants for each period of change----
+
+## 4.2. Plant turnover for each period of change ----
 # First period = turnover between "_1997.2000" and "_2006.2009"
 # Second period = turnover between "_2003.2006" and "_2012.2015"
 # Third period = turnover between "_2009.2012" and "_2015.2018"
+
+# First period (2000 to 2006)
+plant_turnover$turnover2000.2006 <- mapply(calculate_turnover,
+                                           plant_turnover$species_1997.2000,
+                                           plant_turnover$species_2006.2009)
+
+# Second period (2006 to 2012)
+plant_turnover$turnover2006.2012 <- mapply(calculate_turnover,
+                                           plant_turnover$species_2003.2006,
+                                           plant_turnover$species_2012.2015)
+
+# Third period (2012 to 2018)
+plant_turnover$turnover2012.2018 <- mapply(calculate_turnover,
+                                           plant_turnover$species_2009.2012,
+                                           plant_turnover$species_2015.2018)
+
+
+## 4.3. Fungi turnover for each period of change ----
+# First period (2000 to 2006)
+fungi_turnover$turnover2000.2006 <- mapply(calculate_turnover,
+                                           fungi_turnover$species_1997.2000,
+                                           fungi_turnover$species_2006.2009)
+
+# Second period (2006 to 2012)
+fungi_turnover$turnover2006.2012 <- mapply(calculate_turnover,
+                                           fungi_turnover$species_2003.2006,
+                                           fungi_turnover$species_2012.2015)
+
+# Third period (2012 to 2018)
+fungi_turnover$turnover2012.2018 <- mapply(calculate_turnover,
+                                           fungi_turnover$species_2009.2012,
+                                           fungi_turnover$species_2015.2018)
+
+## 4.4. Aves turnover for each period of change ----
+# First period (2000 to 2006)
+aves_turnover$turnover2000.2006 <- mapply(calculate_turnover,
+                                          aves_turnover$species_1997.2000,
+                                          aves_turnover$species_2006.2009)
+
+# Second period (2006 to 2012)
+aves_turnover$turnover2006.2012 <- mapply(calculate_turnover,
+                                          aves_turnover$species_2003.2006,
+                                          aves_turnover$species_2012.2015)
+
+# Third period (2012 to 2018)
+aves_turnover$turnover2012.2018 <- mapply(calculate_turnover,
+                                          aves_turnover$species_2009.2012,
+                                          aves_turnover$species_2015.2018)
+
+## 4.5. Mammalia turnover for each period of change ----
+# First period (2000 to 2006)
+mammalia_turnover$turnover2000.2006 <- mapply(calculate_turnover,
+                                              mammalia_turnover$species_1997.2000,
+                                              mammalia_turnover$species_2006.2009)
+
+# Second period (2006 to 2012)
+mammalia_turnover$turnover2006.2012 <- mapply(calculate_turnover,
+                                              mammalia_turnover$species_2003.2006,
+                                              mammalia_turnover$species_2012.2015)
+
+# Third period (2012 to 2018)
+mammalia_turnover$turnover2012.2018 <- mapply(calculate_turnover,
+                                              mammalia_turnover$species_2009.2012,
+                                              mammalia_turnover$species_2015.2018)
+
+## 4.6. Insecta turnover for each period of change ----
+# First period (2000 to 2006)
+insecta_turnover$turnover2000.2006 <- mapply(calculate_turnover,
+                                             insecta_turnover$species_1997.2000,
+                                             insecta_turnover$species_2006.2009)
+
+# Second period (2006 to 2012)
+insecta_turnover$turnover2006.2012 <- mapply(calculate_turnover,
+                                             insecta_turnover$species_2003.2006,
+                                             insecta_turnover$species_2012.2015)
+
+# Third period (2012 to 2018)
+insecta_turnover$turnover2012.2018 <- mapply(calculate_turnover,
+                                             insecta_turnover$species_2009.2012,
+                                             insecta_turnover$species_2015.2018)
+
 
 
 
