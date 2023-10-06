@@ -359,7 +359,7 @@ calculate_turnover <- function(species1, species2) {
 }
 
 
-## 4.2. Plant turnover for each period of change ----
+## 4.2. Plants ----
 # First period = turnover between "_1997.2000" and "_2006.2009"
 # Second period = turnover between "_2003.2006" and "_2012.2015"
 # Third period = turnover between "_2009.2012" and "_2015.2018"
@@ -380,7 +380,7 @@ plant_turnover$turnover2012.2018 <- mapply(calculate_turnover,
                                            plant_turnover$species_2015.2018)
 
 
-## 4.3. Fungi turnover for each period of change ----
+## 4.3. Fungi ----
 # First period (2000 to 2006)
 fungi_turnover$turnover2000.2006 <- mapply(calculate_turnover,
                                            fungi_turnover$species_1997.2000,
@@ -396,7 +396,7 @@ fungi_turnover$turnover2012.2018 <- mapply(calculate_turnover,
                                            fungi_turnover$species_2009.2012,
                                            fungi_turnover$species_2015.2018)
 
-## 4.4. Aves turnover for each period of change ----
+## 4.4. Aves ----
 # First period (2000 to 2006)
 aves_turnover$turnover2000.2006 <- mapply(calculate_turnover,
                                           aves_turnover$species_1997.2000,
@@ -412,7 +412,7 @@ aves_turnover$turnover2012.2018 <- mapply(calculate_turnover,
                                           aves_turnover$species_2009.2012,
                                           aves_turnover$species_2015.2018)
 
-## 4.5. Mammalia turnover for each period of change ----
+## 4.5. Mammalia ----
 # First period (2000 to 2006)
 mammalia_turnover$turnover2000.2006 <- mapply(calculate_turnover,
                                               mammalia_turnover$species_1997.2000,
@@ -428,7 +428,7 @@ mammalia_turnover$turnover2012.2018 <- mapply(calculate_turnover,
                                               mammalia_turnover$species_2009.2012,
                                               mammalia_turnover$species_2015.2018)
 
-## 4.6. Insecta turnover for each period of change ----
+## 4.6. Insecta ----
 # First period (2000 to 2006)
 insecta_turnover$turnover2000.2006 <- mapply(calculate_turnover,
                                              insecta_turnover$species_1997.2000,
@@ -445,7 +445,56 @@ insecta_turnover$turnover2012.2018 <- mapply(calculate_turnover,
                                              insecta_turnover$species_2015.2018)
 
 
+# 5. CREATE DF WITH TURNOVER AND LAND COVER CHANGE VALUES ----
+
+## 5.1. Extract values for land cover change ----
+# First period
+values_2000.2006 <- terra::values(norway_corine[[1]] - norway_corine[[2]])
 
 
+# Second period
+values_2006.2012 <- terra::values(norway_corine[[2]] - norway_corine[[3]])
+
+# Third period
+values_2012.2018 <- terra::values(norway_corine[[3]] - norway_corine[[4]])
+
+## 5.2. Convert to vector ----
+
+#First period
+if (is.matrix(values_2000.2006)) {
+  values_2000.2006 <- as.vector(values_2000.2006)
+}
+
+#Second period
+if (is.matrix(values_2006.2012)) {
+  values_2006.2012 <- as.vector(values_2006.2012)
+}
+
+#Third period
+if (is.matrix(values_2012.2018)) {
+  values_2012.2018 <- as.vector(values_2012.2018)
+}
+
+## 5.3. Extract land cover values using the unique cell IDs ----
+
+# Create list of all turnover dfs
+turnover_list <- list(plant_turnover = plant_turnover, 
+                      fungi_turnover = fungi_turnover, 
+                      aves_turnover = aves_turnover, 
+                      mammalia_turnover = mammalia_turnover, 
+                      insecta_turnover = insecta_turnover)
+
+# Loop to extract land cover values 
+turnover_list <- lapply(turnover_list, function(turnover_df) {
+  turnover_df |>
+    mutate(cover_change_2000.2006 = values_2000.2006[turnover_df$cell[,1]],
+           cover_change_2006.2012 = values_2006.2012[turnover_df$cell[,1]],
+           cover_change_2012.2018 = values_2012.2018[turnover_df$cell[,1]])
+})
+
+# Extract modified dfs from listand assign them back to their individual variables
+list2env(turnover_list, envir = .GlobalEnv)
+
+## 5.4. Replace land cover change numerical values with corresponding categories ----
 
 
