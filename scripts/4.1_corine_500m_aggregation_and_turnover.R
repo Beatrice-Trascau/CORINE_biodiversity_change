@@ -689,7 +689,7 @@ ggplot(extens_turnover, aes(x = extensification_amount, fill = year))+
   geom_histogram(color = "black", alpha = 0.6, position = "identity")+
   scale_fill_manual(values=c("#6DD3CE", "#C8E9A0", "#F7A278"))+
   facet_wrap(~year, labeller = labeller(year = new_labels))+
-  xlab("Intensification Value")+
+  xlab("Extensification Value")+
   ylab("Count")+
   theme_classic()+
   theme(legend.position = "none")
