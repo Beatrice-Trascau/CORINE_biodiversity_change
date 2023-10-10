@@ -204,7 +204,7 @@ gain_loss_plot <- gain_loss_2000_2006 |>
   scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
                                             "#6A3D9A", "#FF7F00",
                                             "gold1","maroon"))+
-                                              theme_classic()
+  theme_classic()
 #Change x axis ticks
 gain_loss_plot + theme(axis.text.x = element_text(angle = 30,
                                                   hjust = 1))
@@ -240,6 +240,47 @@ gain_loss_plot_forestless + theme(axis.text.x = element_text(angle = 30,
 
 #Save Plot
 ggsave(here("figures", "gain_loss_2000.2006_forestless.svg"))
+
+dev.off()
+
+### 2.6.3. Barplot of land cover transitions in 2000-2006 with dual y axis ----
+#Set scaling factor
+scaling_factor <- 10
+
+#Create new column in df to scale down the large values
+gain_loss_2000_2006$scaled_count <- ifelse(abs(gain_loss_2000_2006$count) > 90,
+                                           gain_loss_2000_2006$count/scaling_factor,
+                                           gain_loss_2000_2006$count)
+
+#Plot the data
+ggplot(gain_loss_2000_2006, aes(x = focus, y = scaled_count,
+                                fill = transition))+
+  geom_bar(stat="identity", position="stack")+
+  scale_y_continuous(
+    name = bquote("Area changes"~("km"^2)),
+    sec.axis = sec_axis(~ . * scaling_factor, name = bquote("Area changes"~("km"^2)))
+  )+
+  xlab("Land Cover Classes")+
+  scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
+                               "#6A3D9A", "#FF7F00",
+                               "gold1","maroon"),
+                    name = "Land Cover Classes",
+                    labels = c("Agriculture & Vegetation", "Complex Agriculture",
+                               "Forests", "Moors, Heathland & Grassland",
+                               "Sparse Vegetation", "Transitional Woodland Shrub",
+                               "Urban Fabric"))+
+  scale_x_discrete(labels = c("Agriculture & Vegetation", "Complex Agriculture",
+                              "Forests", "Moors, Heathland & Grassland",
+                              "Sparse Vegetation", "Transitional Woodland Shrub",
+                              "Urban Fabric"))+
+  ggtitle("Land Cover Transitions 2000 - 2006")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 30,
+                                   hjust = 1))
+
+#Save Plot
+ggsave(here("figures", "gain_loss_2000.2006_dual_y_axis.svg"),
+       width = 10, height = 5.37)
 
 dev.off()
 
@@ -428,6 +469,46 @@ ggsave(here("figures", "gain_loss_2006.2012_forestless.svg"))
 
 dev.off()
 
+### 3.5.3. Barplot of land cover transitions in 2006-2012 with dual y axis ----
+#Set scaling factor
+scaling_factor <- 10
+
+#Create new column in df to scale down the large values
+gain_loss_2006_2012$scaled_count <- ifelse(abs(gain_loss_2006_2012$count) > 90,
+                                           gain_loss_2006_2012$count/scaling_factor,
+                                           gain_loss_2006_2012$count)
+
+#Plot the data
+ggplot(gain_loss_2006_2012, aes(x = focus, y = scaled_count,
+                                fill = transition))+
+  geom_bar(stat="identity", position="stack")+
+  scale_y_continuous(
+    name = bquote("Area changes"~("km"^2)),
+    sec.axis = sec_axis(~ . * scaling_factor, name = bquote("Area changes"~("km"^2)))
+  )+
+  xlab("Land Cover Classes")+
+  scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
+                               "#6A3D9A", "#FF7F00",
+                               "gold1","maroon"),
+                    name = "Land Cover Classes",
+                    labels = c("Agriculture & Vegetation", "Complex Agriculture",
+                               "Forests", "Moors, Heathland & Grassland",
+                               "Sparse Vegetation", "Transitional Woodland Shrub",
+                               "Urban Fabric"))+
+  scale_x_discrete(labels = c("Agriculture & Vegetation", "Complex Agriculture",
+                              "Forests", "Moors, Heathland & Grassland",
+                              "Sparse Vegetation", "Transitional Woodland Shrub",
+                              "Urban Fabric"))+
+  ggtitle("Land Cover Transitions 2006 - 2012")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 30,
+                                   hjust = 1))
+
+#Save Plot
+ggsave(here("figures", "gain_loss_2006.2012_dual_y_axis.svg"),
+       width = 10, height = 5.37)
+
+
 # 4. LAND COVER TRANSITIONS BETWEEN 2012 AND 2018 ----
 ## 4.1. Calculate change between 2012 and 2018 ----
 #Extract values for the difference between 2000 and 2006 as df
@@ -569,7 +650,7 @@ gain_loss_plot_2012_2018 <- gain_loss_2012_2018 |>
              x = focus))+
   geom_bar(position = "stack",
            stat = "identity")+
-  labs(fill = "Land Chttp://127.0.0.1:18341/graphics/plot_zoom_png?width=1536&height=814over Classes",
+  labs(fill = "Land Cover Classes",
        x = "Land cover classes",
        y = bquote("Area changes"~("km"^2)),
        title = "Land Cover Transitions 2012 - 2018")+
@@ -614,6 +695,46 @@ gain_loss_plot_forestless_2012_2018 + theme(axis.text.x = element_text(angle = 3
 ggsave(here("figures", "gain_loss_2012.2018_forestless.svg"))
 
 dev.off()
+
+### 4.5.3. Barplot of land cover transitions in 2012-2018 with dual y axis ----
+#Set scaling factor
+scaling_factor <- 10
+
+#Create new column in df to scale down the large values
+gain_loss_2012_2018$scaled_count <- ifelse(abs(gain_loss_2012_2018$count) > 90,
+                                           gain_loss_2012_2018$count/scaling_factor,
+                                           gain_loss_2012_2018$count)
+
+#Plot the data
+ggplot(gain_loss_2012_2018, aes(x = focus, y = scaled_count,
+                                fill = transition))+
+  geom_bar(stat="identity", position="stack")+
+  scale_y_continuous(
+    name = bquote("Area changes"~("km"^2)),
+    sec.axis = sec_axis(~ . * scaling_factor, name = bquote("Area changes"~("km"^2)))
+  )+
+  xlab("Land Cover Classes")+
+  scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
+                               "#6A3D9A", "#FF7F00",
+                               "gold1","maroon"),
+                    name = "Land Cover Classes",
+                    labels = c("Agriculture & Vegetation", "Complex Agriculture",
+                               "Forests", "Moors, Heathland & Grassland",
+                               "Sparse Vegetation", "Transitional Woodland Shrub",
+                               "Urban Fabric"))+
+  scale_x_discrete(labels = c("Agriculture & Vegetation", "Complex Agriculture",
+                              "Forests", "Moors, Heathland & Grassland",
+                              "Sparse Vegetation", "Transitional Woodland Shrub",
+                              "Urban Fabric"))+
+  ggtitle("Land Cover Transitions 2012 - 2018")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 30,
+                                   hjust = 1))
+
+#Save Plot
+ggsave(here("figures", "gain_loss_2012.2018_dual_y_axis.svg"),
+       width = 10, height = 5.37)
+
 
 # 5. LAND COVER TRANSITIONS BETWEEN 2000 AND 2018 ----
 ## 5.1. Calculate change between 2000 and 2018 ----
@@ -798,5 +919,45 @@ gain_loss_plot_forestless_2000_2018 + theme(axis.text.x = element_text(angle = 3
 ggsave(here("figures", "gain_loss_2000.2018_forestless.svg"))
 
 dev.off()
+
+### 5.5.3. Barplot of land cover transitions in 2000-2018 with dual y axis ----
+#Set scaling factor
+scaling_factor <- 10
+
+#Create new column in df to scale down the large values
+gain_loss_2000_2018$scaled_count <- ifelse(abs(gain_loss_2000_2018$count) > 90,
+                                           gain_loss_2000_2018$count/scaling_factor,
+                                           gain_loss_2000_2018$count)
+
+#Plot the data
+ggplot(gain_loss_2000_2018, aes(x = focus, y = scaled_count,
+                                fill = transition))+
+  geom_bar(stat="identity", position="stack")+
+  scale_y_continuous(
+    name = bquote("Area changes"~("km"^2)),
+    sec.axis = sec_axis(~ . * scaling_factor, name = bquote("Area changes"~("km"^2)))
+  )+
+  xlab("Land Cover Classes")+
+  scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
+                               "#6A3D9A", "#FF7F00",
+                               "gold1","maroon"),
+                    name = "Land Cover Classes",
+                    labels = c("Agriculture & Vegetation", "Complex Agriculture",
+                               "Forests", "Moors, Heathland & Grassland",
+                               "Sparse Vegetation", "Transitional Woodland Shrub",
+                               "Urban Fabric"))+
+  scale_x_discrete(labels = c("Agriculture & Vegetation", "Complex Agriculture",
+                              "Forests", "Moors, Heathland & Grassland",
+                              "Sparse Vegetation", "Transitional Woodland Shrub",
+                              "Urban Fabric"))+
+  ggtitle("Land Cover Transitions 2000 - 2018")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 30,
+                                   hjust = 1))
+
+#Save Plot
+ggsave(here("figures", "gain_loss_2000.2018_dual_y_axis.svg"),
+       width = 10, height = 5.37)
+
 
 # END OF SCRIPT ----
