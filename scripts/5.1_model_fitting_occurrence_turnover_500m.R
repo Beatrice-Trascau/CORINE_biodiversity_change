@@ -14,9 +14,10 @@ library(here)
 library(dplyr)
 library(tidyverse)
 library(ggplot2)
-library(lme4)
 library(lattice)
 library(cowplot)
+library(lme4)
+library(betareg)
 source("HighstatLibV14.R") #useful functions from GAM course, see below
 # Remember to cite this library as:
 # Mixed effects models and extensions in ecology with R. (2009).
@@ -160,10 +161,66 @@ combined_hist <- plot_grid(all_turnover, turnover_by_year,
 
 # Save combined plot
 ggsave(filename = here("figures",
-                       "intensification_extensification_turnover.svg"),
-       plot = combined_plot)
+                       "turnover_intensification_hist.svg"),
+       plot = combined_hist)
 
 
+## 2.4. Collinearity ----
+# Check for collinearity between covariates
+# Pairplot of covariates
+ToPlot <- c("intensification_amount", "year.y")
+Mypairs(intens_turnover_for_model[,ToPlot])
+# No collinearity detected
+
+svg(here("figures",
+         "collinearity_check_covariates.svg"))
+
+## 2.5. Relationships ----
+
+# Convert year column to factor
+intens_turnover_for_model$year <- as.factor(intens_turnover_for_model$year)
+
+# Create new facet labels
+new_labels <- c("2000.2006" = "2000 - 2006",
+                "2006.2012" = "2006 - 2012",
+                "2012.2018" = "2012 - 2018")
+
+# Plot scatter plot with facetwrap
+ggplot(intens_turnover_for_model, aes(x = intensification_amount, y= turnover,
+                            color = year))+
+  geom_point(size = 2)+
+  geom_smooth()+
+  facet_wrap(~year, labeller = labeller(year = new_labels))+
+  xlab("Intensification")+
+  ylab("Turnover")+
+  scale_color_manual(values = c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  theme_classic()+
+  theme(legend.position = "none")
+
+# Save plot as .svg
+#ggsave(here("figures",
+            #"turnover_intensification.svg"))
+
+## 2.6. Interactions ----
+# Plot coplot to visualise potential presence of interactions
+
+# Define year and intensification amount as categorial values
+intens_turnover_for_model$year.y <- as.factor(intens_turnover_for_model$year.y)
+intens_turnover_for_model$intens_fact <- as.factor(intens_turnover_for_model$intensification_amount)
+
+# Simple lm
+intens_M1 <- lm(intens_turnover_for_model$turnover ~ 
+                  intens_turnover_for_model$year.y*
+                  intens_turnover_for_model$intens_fact)
+summary(intens_M1)
+anova(intens_M1)
+
+#Make the coplot
+coplot(turnover ~ intensification_amount| year.y * intens_fact,
+       data = intens_turnover_for_model)
+
+coplot(year.y ~ intens_fact | turnover,
+       data = intens_turnover_for_model)
 
 
 # 3. GLM ----
@@ -172,8 +229,32 @@ ggsave(filename = here("figures",
 # Run GLM
 intens_glm <- glm(turnover ~ intensification_amount + year.y,
                   intens_turnover_for_model,
-                  family = "gamma")
+                  family = "poisson")
 
 # Check output
 summary(intens_glm)
 anova(intens_glm, test = "Chisq")
+
+# Poisson is a wildly inappropriate family for the data that we have
+# Turnover data is proportion in [0,1] => need beta distribution
+# Beta Regression alternative to GLM for beta distributed data
+
+## 3.2. Beta Regression ----
+# Beta distribution assumes that data are in (0,1)
+# Beta alternative to GAM can automatically deal with these
+# But for Beta regression, data transformation is needed
+
+# Add and subtract very small value to 0s and 1s respectively
+intens_turnover_for_model <- intens_turnover_for_model |>
+  mutate(adjusted_turnover = case_when(turnover == 0 ~ turnover + 1e-10,
+                                       turnover == 1 ~ turnover - 1e-10, 
+                                       TRUE ~ turnover))
+# Run Beta regression
+betareg_intens <- betareg(adjusted_turnover ~ year * intensification_amount,
+                          data = intens_turnover_for_model)
+
+summary(betareg_intens)
+
+## 3.3. Beta regression model validation ----
+
+# 4. GAM ----
