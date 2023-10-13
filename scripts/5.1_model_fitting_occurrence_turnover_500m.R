@@ -15,6 +15,12 @@ library(dplyr)
 library(tidyverse)
 library(ggplot2)
 library(lme4)
+library(lattice)
+library(cowplot)
+source("HighstatLibV14.R") #useful functions from GAM course, see below
+# Remember to cite this library as:
+# Mixed effects models and extensions in ecology with R. (2009).
+#Zuur, AF, Ieno, EN, Walker, N, Saveliev, AA, and Smith, GM. Springer
 
 # 1. READ IN AND PREPARE DATA ----
 
@@ -90,19 +96,83 @@ setequal(intens_turnover_for_model$year.x, intens_turnover_for_model$year.y) #TR
 
 #Remove year.x and year.y columns
 intens_turnover_for_model <- intens_turnover_for_model |>
-  mutate(year = as.factor(year.y),
-         intensification_amount = as.factor(intensification_amount)) |>
+  mutate(year = as.factor(year.y)) |>
   select(-year.x)
 
 
+# 2. DATA EXPLORATION ----
 
-# 2. GLM ----
+## 2.1. Zeros ----
+# Check how many observations in the response variable are = 0
+zeros_response <- 100 * sum(intens_turnover_for_model$turnover 
+                            == 0) / nrow(intens_turnover_for_model)
+zeros_response # = 0.81 - not too bad
 
-## 2.1. GLM for Intensification ----
+#Check how many observations in one of the explanatory variables are = 0
+zeros_explan <- 100 * sum(intens_turnover_for_model$intensification_amount 
+                          == 0) / nrow(intens_turnover_for_model)
+zeros_explan # = 97.62
+
+## 2.2. Outliers ----
+# Cleaveland dotplot for the response variable and covariates
+# Here I am using the cleaveland dotplot code provided in the "Generalised Additve Models for 
+# the analysis of spatial and spatial-temporal data" (04.09 - 07.09.2023)
+
+# List of variables to plot
+ToPlot <- c("turnover", "intensification_amount")
+
+# Plot Cleaveland dotplot
+Mydotplot(intens_turnover_for_model[,ToPlot])
+
+# Save Cleaveland dotplot to file
+svg(here("figures", "cleaveland_dotplot_turnover_intensification.svg"))
+
+dev.off()
+
+## 2.3. Normality ----
+#Plot histogram of all turnover values 
+all_turnover <- ggplot(intens_turnover_for_model, aes(x = turnover))+
+  geom_histogram(color = "black", alpha = 0.6, position = "identity")+
+  xlab("Turnover Value")+
+  ylab("Count")+
+  theme_classic()+
+  theme(legend.position = "none")
+
+#Plot histogram of turnover values broken down by year
+new_labels <- c("2000.2006" = "2000 - 2006",
+                "2006.2012" = "2006 - 2012",
+                "2012.2018" = "2012 - 2018")
+
+turnover_by_year <- ggplot(intens_turnover_for_model, aes(x = turnover, fill = year))+
+  geom_histogram(color = "black", alpha = 0.6, position = "identity")+
+  scale_fill_manual(values=c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  facet_wrap(~year, labeller = labeller(year = new_labels))+
+  xlab("Turnover Value")+
+  ylab("Count")+
+  theme_classic()+
+  theme(legend.position = "none")
+
+# Combine the 2 into one single figure
+combined_hist <- plot_grid(all_turnover, turnover_by_year,
+                           labels = c('A', 'B'), label_size = 12,
+                           ncol = 1)
+
+
+# Save combined plot
+ggsave(filename = here("figures",
+                       "intensification_extensification_turnover.svg"),
+       plot = combined_plot)
+
+
+
+
+# 3. GLM ----
+
+## 3.1. GLM for Intensification ----
 # Run GLM
 intens_glm <- glm(turnover ~ intensification_amount + year.y,
                   intens_turnover_for_model,
-                  family = "poisson")
+                  family = "gamma")
 
 # Check output
 summary(intens_glm)
