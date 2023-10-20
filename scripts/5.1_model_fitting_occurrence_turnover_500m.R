@@ -18,6 +18,7 @@ library(lattice)
 library(cowplot)
 library(lme4)
 library(betareg)
+library(mgcv)
 source("HighstatLibV14.R") #useful functions from GAM course, see below
 # Remember to cite this library as:
 # Mixed effects models and extensions in ecology with R. (2009).
@@ -258,3 +259,85 @@ summary(betareg_intens)
 ## 3.3. Beta regression model validation ----
 
 # 4. GAM ----
+
+## 4.1. Intensification amount as smoother ----
+betagam_intens <- gam(turnover ~ year * s(intensification_amount),
+                      family = betar(link = "logit"),
+                      data = intens_turnover_for_model)
+
+summary(betagam_intens)
+
+
+# 5. No Zero intensification values ----
+
+# Remove 0s
+natural_intens_model <- intens_turnover_for_model |>
+  filter(intensification_amount != 0)
+
+## 5.1. Data Exploration ----
+
+### 5.1.1. Outliers ----
+
+# Cleaveland dotplot for the response variable and covariates
+# Here I am using the cleaveland dotplot code provided in the "Generalised Additve Models for 
+# the analysis of spatial and spatial-temporal data" (04.09 - 07.09.2023)
+
+# List of variables to plot
+ToPlot <- c("turnover", "intensification_amount")
+
+# Plot Cleaveland dotplot
+Mydotplot(natural_intens_model[,ToPlot])
+
+# Save Cleaveland dotplot to file
+#svg(here("figures", "cleaveland_dotplot_turnover_non0_intensification.svg"))
+
+#dev.off()
+
+
+### 5.1.2. Relationships ----
+
+# Want to see if the relationship between turnover and intensification change when the 0s are removed
+
+# Convert year column to factor
+natural_intens_model$year <- as.factor(natural_intens_model$year)
+
+# Create new facet labels
+new_labels <- c("2000.2006" = "2000 - 2006",
+                "2006.2012" = "2006 - 2012",
+                "2012.2018" = "2012 - 2018")
+
+# Plot scatter plot with facetwrap
+ggplot(natural_intens_model, aes(x = intensification_amount, y= turnover,
+                                      color = year))+
+  geom_point(size = 2)+
+  geom_smooth()+
+  scale_x_continuous(name = "Intensification Amount",
+                     breaks = c(1, 5, 10, 15, 20, 25),
+                     labels = c("4%", "20%", "40%",
+                                "60%", "80%", "100%"))+
+  facet_wrap(~year, labeller = labeller(year = new_labels))+
+  xlab("Intensification")+
+  ylab("Turnover")+
+  scale_color_manual(values = c("#6DD3CE", "#C8E9A0", "#F7A278"))+
+  theme_classic()+
+  theme(legend.position = "none")
+
+# The relationships change significantly - the 0 inflation in the intensification
+
+# Save plot as .svg
+ggsave(here("figures",
+            "turnover_non0_intensification.svg"))
+
+# 5.2. GAM with non-zero intesification ----
+# Convert year to numeric
+natural_intens_model$year <- as.numeric(as.character(natural_intens_model$year))
+
+# Run beta GAM
+m1 <- gam(turnover ~ s(year, k = 3) + s(intensification_amount),
+          method = "REML",
+          family = betar,
+          data = natural_intens_model)
+
+summary(m1)
+draw(m1)
+gam.check(m1)
