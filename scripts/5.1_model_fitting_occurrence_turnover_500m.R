@@ -270,13 +270,22 @@ summary(betagam_intens)
 
 # 5. No Zero intensification values ----
 
+## 5.1. Prepare the data ----
+
 # Remove 0s
 natural_intens_model <- intens_turnover_for_model |>
   filter(intensification_amount != 0)
 
-## 5.1. Data Exploration ----
+# Transform the 1s in the turnover values using the formula:
+#  ( Y * (N - 1) + 0.5 ) / N
+# where Y is turnover and N is the sample size
+natural_intens_model <- natural_intens_model |>
+  mutate(adjusted_turnover = ((turnover * (length(turnover)-1) + 0.5)/length(turnover)))
 
-### 5.1.1. Outliers ----
+
+## 5.2. Data Exploration ----
+
+### 5.2.1. Outliers ----
 
 # Cleaveland dotplot for the response variable and covariates
 # Here I am using the cleaveland dotplot code provided in the "Generalised Additve Models for 
@@ -294,7 +303,7 @@ Mydotplot(natural_intens_model[,ToPlot])
 #dev.off()
 
 
-### 5.1.2. Relationships ----
+### 5.2.2. Relationships ----
 
 # Want to see if the relationship between turnover and intensification change when the 0s are removed
 
@@ -328,12 +337,12 @@ ggplot(natural_intens_model, aes(x = intensification_amount, y= turnover,
 ggsave(here("figures",
             "turnover_non0_intensification.svg"))
 
-# 5.2. GAM with non-zero intesification ----
+# 5.3. GAM with non-zero intesification ----
 # Convert year to numeric
 natural_intens_model$year <- as.numeric(as.character(natural_intens_model$year))
 
 # Run beta GAM
-m1 <- gam(turnover ~ s(year, k = 3) + s(intensification_amount),
+m1 <- gam(adjusted_turnover ~ s(year, k = 3) + s(intensification_amount),
           method = "REML",
           family = betar,
           data = natural_intens_model)
