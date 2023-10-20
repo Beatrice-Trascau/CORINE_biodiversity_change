@@ -276,12 +276,6 @@ summary(betagam_intens)
 natural_intens_model <- intens_turnover_for_model |>
   filter(intensification_amount != 0)
 
-# Transform the 1s in the turnover values using the formula:
-#  ( Y * (N - 1) + 0.5 ) / N
-# where Y is turnover and N is the sample size
-natural_intens_model <- natural_intens_model |>
-  mutate(adjusted_turnover = ((turnover * (length(turnover)-1) + 0.5)/length(turnover)))
-
 
 ## 5.2. Data Exploration ----
 
@@ -342,7 +336,7 @@ ggsave(here("figures",
 natural_intens_model$year <- as.numeric(as.character(natural_intens_model$year))
 
 # Run beta GAM
-m1 <- gam(adjusted_turnover ~ s(year, k = 3) + s(intensification_amount),
+m1 <- gam(turnover ~ s(year, k = 3) + s(intensification_amount),
           method = "REML",
           family = betar,
           data = natural_intens_model)
@@ -350,3 +344,21 @@ m1 <- gam(adjusted_turnover ~ s(year, k = 3) + s(intensification_amount),
 summary(m1)
 draw(m1)
 gam.check(m1)
+
+# 6. GLM WITH FIXED INTERCEPT ----
+
+## 6.1. Calculate mean turnover at intensification = 0 ----
+
+# Extract rows with intensification_amount = 0
+no_change <- intens_turnover_for_model |>
+  filter(intensification_amount == 0)
+
+# Calculate mean turnover 
+avg_turnover <- mean(no_change$turnover) #0.61
+
+## 6.2. GLM ----
+
+# Fixed intercepts cannot be set in GAM -> use workaround
+#  Centre turnover around the "fixed intercept" calcualted above (0.61)
+natural_intens_model <- natural_intens_model |>
+  mutate(centered_turnover = )
