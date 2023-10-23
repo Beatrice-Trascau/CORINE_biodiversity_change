@@ -19,6 +19,7 @@ library(cowplot)
 library(lme4)
 library(betareg)
 library(mgcv)
+library(psych)
 source("HighstatLibV14.R") #useful functions from GAM course, see below
 # Remember to cite this library as:
 # Mixed effects models and extensions in ecology with R. (2009).
@@ -261,7 +262,7 @@ summary(betareg_intens)
 # 4. GAM ----
 
 ## 4.1. Intensification amount as smoother ----
-betagam_intens <- gam(turnover ~ year * s(intensification_amount),
+betagam_intens <- gam(turnover ~ year + s(intensification_amount),
                       family = betar(link = "logit"),
                       data = intens_turnover_for_model)
 
@@ -345,7 +346,7 @@ summary(m1)
 draw(m1)
 gam.check(m1)
 
-# 6. GLM WITH FIXED INTERCEPT ----
+# 6. MODELS WITH FIXED INTERCEPT ----
 
 ## 6.1. Calculate mean turnover at intensification = 0 ----
 
@@ -357,8 +358,83 @@ no_change <- intens_turnover_for_model |>
 avg_turnover <- mean(no_change$turnover) #0.61
 
 ## 6.2. GLM ----
+m2_fxed_intercept <- lm(I(turnover - avg_turnover) ~ 0 + intensification_amount + year.y,
+                        no_change)
+
+summary(m2_fxed_intercept)
+
+## 6.3. Beta GAM ----
 
 # Fixed intercepts cannot be set in GAM -> use workaround
 #  Centre turnover around the "fixed intercept" calcualted above (0.61)
+#  Do this with the forula: Y - mean(Y) + 0.61, Y = response variable
 natural_intens_model <- natural_intens_model |>
-  mutate(centered_turnover = )
+  mutate(centered_turnover = turnover - mean(turnover) + avg_turnover)
+
+# Restrict values to be within (0,1)
+#  Do this to deal with any negative values and any values larger than 1
+natural_intens_model <- natural_intens_model |>
+  mutate(positive_centered_turnover = pmin(pmax(centered_turnover, 1e-6),
+                                           1-(1e-6)))
+
+# Fit GAM
+m3_fixed_intercept <- gam(positive_centered_turnover ~ 0 + s(year, k = 3) 
+                          + s(intensification_amount),
+                          method = "REML",
+                          family = betar,
+                          data = natural_intens_model)
+
+summary(m3_fixed_intercept)
+gam.check(m3_fixed_intercept)
+
+# 7. CORRELATIONS ----
+# Look at correlations between turnover values in different time periods
+
+## 7.1. Turover correlations when there is no chage ----
+
+# Subset dataframe to only contain turnover values when there is no change
+no_change_corr <- intens_turnover |>
+  filter(intens_2000.2006 == 0 & intens_2006.2012 == 0 & intens_2012.2018 == 0) |>
+  select(-c(cell, intens_2000.2006, intens_2006.2012, intens_2012.2018))
+
+# Open SVG device
+svg(filename = here("figures", 
+                    "turnover_correlations_no_change.svg"))
+
+# Plot pairwise correlations 
+pairs.panels(no_change_corr)
+
+# Close the SVG device
+dev.off()
+
+## 7.2. Turnover correlations when there is some change ----
+# Subset dataframe to contain turnover values when there is at least one change throughout the years of sampling
+some_change_corr <- intens_turnover |>
+  filter(intens_2000.2006 != 0 | intens_2006.2012 != 0 | intens_2012.2018 != 0) |>
+  select(-c(cell, intens_2000.2006, intens_2006.2012, intens_2012.2018))
+
+# Open SVG device
+svg(filename = here("figures",
+                    "turnover_correlations_some_change.svg"))
+
+# Plot pairwise correlations 
+pairs.panels(some_change_corr)
+
+# Close SVG device
+dev.off()
+
+## 7.3. Turnover correlations when there is only change ----
+# Subset dataframe to contain turnover values when all years have a non-zero value for intensification
+all_change_corr <- intens_turnover |>
+  filter(intens_2000.2006 != 0 & intens_2006.2012 != 0 & intens_2012.2018 != 0) |>
+  select(-c(cell, intens_2000.2006, intens_2006.2012, intens_2012.2018))
+
+# Open SVG device
+svg(filename = here("figures",
+                    "turnover_correlations_all_change.svg"))
+
+# Plot pairwise correlations
+pairs.panels(all_change_corr)
+
+# Close SVG device
+dev.off()
