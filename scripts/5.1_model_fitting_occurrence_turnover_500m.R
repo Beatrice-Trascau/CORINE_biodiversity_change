@@ -262,12 +262,38 @@ summary(betareg_intens)
 # 4. GAM ----
 
 ## 4.1. Intensification amount as smoother ----
+# Run model
 betagam_intens <- gam(turnover ~ year + s(intensification_amount),
-                      family = betar(link = "logit"),
+                      method = "REML",
+                      family = betar,
                       data = intens_turnover_for_model)
 
+# Check model output
 summary(betagam_intens)
+gam.check(betagam_intens)
 
+## 4.2. Intensification amount and year as smoothers ----
+# Convert year to numeric and not factor
+intens_turnover_for_model <- intens_turnover_for_model |>
+  mutate(year_numeric = as.numeric(year))
+
+# Run model
+betagam_intens_year <- gam(turnover ~ s(year_numeric, k = 3) 
+                           + s(intensification_amount),
+                      method = "REML",
+                      family = betar,
+                      data = intens_turnover_for_model)
+
+# Check model output
+summary(betagam_intens)
+gam.check(betagam_intens)
+
+
+m3_fixed_intercept <- gam(positive_centered_turnover ~ 0 + s(year, k = 3) 
+                          + s(intensification_amount),
+                          method = "REML",
+                          family = betar,
+                          data = natural_intens_model)
 
 # 5. No Zero intensification values ----
 
