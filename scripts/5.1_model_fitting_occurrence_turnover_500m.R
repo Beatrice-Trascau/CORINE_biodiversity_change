@@ -102,6 +102,27 @@ intens_turnover_for_model <- intens_turnover_for_model |>
   mutate(year = as.factor(year.y)) |>
   select(-year.x)
 
+## 1.2. Extensification -----
+# Read in data
+extens_turnover <- readRDS(here("data", 
+                                "extensification_occurrence_turnover.rds"))
+
+# Remove unnecessary columns
+extens_turnover <- extens_turnover |>
+  select(-c(species_1997.2000, geometry_1997.2000,
+            species_2006.2009, geometry_2006.2009, 
+            species_2003.2006, geometry_2003.2006,
+            species_2012.2015, geometry_2012.2015,
+            species_2009.2012, geometry_2009.2012,
+            species_2015.2018, geometry_2015.2018))
+
+# Remove rows with NA for intensification and NaN for turnover
+extens_turnover <- extens_turnover |>
+  filter_at(vars(extens_2000.2006, extens_2006.2012, extens_2012.2018),
+            all_vars(!is.na(.))) |>
+  filter_at(vars(extens_2000.2006, extens_2006.2012, extens_2012.2018),
+            all_vars(!is.nan(.)))
+
 
 # 2. DATA EXPLORATION ----
 
@@ -413,7 +434,7 @@ m3_fixed_intercept <- gam(positive_centered_turnover ~ 0 + s(year, k = 3)
 summary(m3_fixed_intercept)
 gam.check(m3_fixed_intercept)
 
-# 7. CORRELATIONS ----
+# 7. INTENSIFICATION CORRELATIONS ----
 # Look at correlations between turnover values in different time periods
 
 ## 7.1. Turover correlations when there is no chage ----
@@ -433,34 +454,68 @@ pairs.panels(no_change_corr)
 # Close the SVG device
 dev.off()
 
-## 7.2. Turnover correlations when there is some change ----
+## 7.2. Turnover correlations when there is some intensification ----
 # Subset dataframe to contain turnover values when there is at least one change throughout the years of sampling
-some_change_corr <- intens_turnover |>
+some_intens_corr <- intens_turnover |>
   filter(intens_2000.2006 != 0 | intens_2006.2012 != 0 | intens_2012.2018 != 0) |>
   select(-c(cell, intens_2000.2006, intens_2006.2012, intens_2012.2018))
 
 # Open SVG device
 svg(filename = here("figures",
-                    "turnover_correlations_some_change.svg"))
+                    "turnover_correlations_some_intensification.svg"))
 
 # Plot pairwise correlations 
-pairs.panels(some_change_corr)
+pairs.panels(some_intens_corr)
 
 # Close SVG device
 dev.off()
 
-## 7.3. Turnover correlations when there is only change ----
+## 7.3. Turnover correlations when there is only intensification ----
 # Subset dataframe to contain turnover values when all years have a non-zero value for intensification
-all_change_corr <- intens_turnover |>
+all_intens_corr <- intens_turnover |>
   filter(intens_2000.2006 != 0 & intens_2006.2012 != 0 & intens_2012.2018 != 0) |>
   select(-c(cell, intens_2000.2006, intens_2006.2012, intens_2012.2018))
 
 # Open SVG device
 svg(filename = here("figures",
-                    "turnover_correlations_all_change.svg"))
+                    "turnover_correlations_all_intensification.svg"))
 
 # Plot pairwise correlations
-pairs.panels(all_change_corr)
+pairs.panels(all_intens_corr)
+
+# Close SVG device
+dev.off()
+
+# 8. EXTENSIFICATION CORRELATIONS ----
+
+## 8.2. Turnover correlations when there is some extensification ----
+# Subset dataframe to contain turnover values when there is at least one change throughout the years of sampling
+some_extens_corr <- extens_turnover |>
+  filter(extens_2000.2006 != 0 | extens_2006.2012 != 0 | extens_2012.2018 != 0) |>
+  select(-c(cell, extens_2000.2006, extens_2006.2012, extens_2012.2018))
+
+# Open SVG device
+svg(filename = here("figures",
+                    "turnover_correlations_some_extensification.svg"))
+
+# Plot pairwise correlations 
+pairs.panels(some_extens_corr)
+
+# Close SVG device
+dev.off()
+
+## 7.3. Turnover correlations when there is only extensification ----
+# Subset dataframe to contain turnover values when all years have a non-zero value for intensification
+all_extens_corr <- extens_turnover |>
+  filter(extens_2000.2006 != 0 | extens_2006.2012 != 0 | extens_2012.2018 != 0) |>
+  select(-c(cell, extens_2000.2006, extens_2006.2012, extens_2012.2018))
+
+# Open SVG device
+svg(filename = here("figures",
+                    "turnover_correlations_all_extensification.svg"))
+
+# Plot pairwise correlations
+pairs.panels(all_extens_corr)
 
 # Close SVG device
 dev.off()
