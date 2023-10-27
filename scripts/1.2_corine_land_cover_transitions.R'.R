@@ -16,6 +16,7 @@ library(dplyr)
 library(ggplot2)
 library(gt)
 library(networkD3)
+library(cowplot)
 
 # 1. LOAD MODIFIED CORINE STACKS ----
 
@@ -274,6 +275,7 @@ ggplot(gain_loss_2000_2006, aes(x = focus, y = scaled_count,
                               "Sparse Vegetation", "Transitional Woodland Shrub",
                               "Urban Fabric"))+
   ggtitle("Land Cover Transitions 2000 - 2006")+
+  geom_hline(yintercept = 0)+
   theme_classic()+
   theme(axis.text.x = element_text(angle = 30,
                                    hjust = 1))
@@ -282,7 +284,143 @@ ggplot(gain_loss_2000_2006, aes(x = focus, y = scaled_count,
 ggsave(here("figures", "gain_loss_2000.2006_dual_y_axis.svg"),
        width = 10, height = 5.37)
 
-dev.off()
+
+### 2.6.4. Barplot of land cover transitions with intensification/extensification and dual y axis ----
+# Create new column with Intensification/Extensification based on "difference" values
+  # check CORINE_Land_Cover_Transition_Classes_and_Scores.pdf in T:\vm\inh\zoologi\Bruker\Beatrice\Chapter 1 for details
+intens_extens_2000_2006 <- corine_2000_2006_change_meaning |>
+  mutate(transition_meaning = case_when(difference == 0 ~ "No Change",
+                                        difference %in% c(79, 102, 249, 
+                                                          379, 589, 710,
+                                                          -79, -102, 23, 
+                                                          170, 147, 300, 
+                                                          277, 510, 487, 
+                                                          631, 608, -340,
+                                                          -130, -461, 210,
+                                                          -121, -331) ~ "Intensification",
+                                        difference %in% c(-23, -249, -379, 
+                                                          -589, -170, -300,
+                                                          -510, -147, -277, 
+                                                          -487, 130,-210, 
+                                                          461, 331, 121,
+                                                          340, -710, -340) ~ "Extensification"))
+
+
+
+# Create df of "transition to" values
+  # this dataframe will have the "focus" cover class in the "source" column and the cover class it transitions to in the "target" column
+  # the values will be negative because for every source class, this is the area "lost" that is converted to the "target" cover class
+intens_extens_loss_2000_2006 <- intens_extens_2000_2006 |>
+  filter(value != 0) |>
+  mutate(count = count * (-0.01),
+         focus = source_name,
+         transition = target_name) |>
+  select(focus, transition, count, transition_meaning)
+
+
+# Create df for "transitions from" values
+  # this dataframe will have "focus" cover class in the "target" column and the cover class it transitions from in the "target" column
+  # the values will be positive because for every source class, this is the area "gained" that is converted from the "source" cover clas
+intens_extens_gain_2000_2006 <- intens_extens_2000_2006 |>
+  filter(value != 0) |>
+  mutate(count = count * 0.01,
+         focus = target_name,
+         transition = source_name) |>
+  select (focus, transition, count, transition_meaning)
+
+# Merge gain and loss dataframes into a single df
+intens_extens_gain_loss_2000_2006 <- rbind(intens_extens_loss_2000_2006,
+                                           intens_extens_gain_2000_2006)
+
+# Set scaling factor
+scaling_factor <- 10
+
+# Create new column in df to scale down the large values
+intens_extens_gain_loss_2000_2006$scaled_count <- ifelse(abs(intens_extens_gain_loss_2000_2006$count) > 90,
+                                                         intens_extens_gain_loss_2000_2006$count/scaling_factor,
+                                                         intens_extens_gain_loss_2000_2006$count)
+
+
+# Plot figure of losses and gains based on Zhou et al. (2021) with dual y axis
+ggplot(intens_extens_gain_loss_2000_2006, aes(x = focus, y = scaled_count,
+                                fill = transition_meaning))+
+  geom_bar(stat="identity", position="stack")+
+  scale_y_continuous(
+    name = bquote("Area changes"~("km"^2)),
+    sec.axis = sec_axis(~ . * scaling_factor, name = bquote("Area changes"~("km"^2)))
+  )+
+  xlab("Land Cover Classes")+
+  scale_fill_manual(values = c("green4", "#FF7F00"),
+                    name = "Transition Type",
+                    labels = c("Nature Gain", "Nature Loss"))+ 
+  scale_x_discrete(labels = c("Agriculture & Vegetation", "Complex Agriculture",
+                              "Forests", "Moors, Heathland & Grassland",
+                              "Sparse Vegetation", "Transitional Woodland Shrub",
+                              "Urban Fabric"))+
+  ggtitle("Land Cover Transitions 2000 - 2006")+
+  geom_hline(yintercept = 0)+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 30,
+                                   hjust = 1))
+
+# Save plot 
+ggsave(here("figures", "intens_extens_barplot_2000_2006_dual_yaxis.svg"),
+       width = 10, height = 5.37)
+
+### 2.6.5. Combined plots from 2.6.3. and 2.6.4. ----
+
+# Barplot of transitions between land cover classes
+cover_classes <- ggplot(gain_loss_2000_2006, aes(x = focus, y = scaled_count,
+                                                 fill = transition))+
+  geom_bar(stat="identity", position="stack")+
+  scale_y_continuous(
+    name = bquote("Area changes"~("km"^2)),
+    sec.axis = sec_axis(~ . * scaling_factor, name = bquote("Area changes"~("km"^2)))
+  )+
+  xlab("Land Cover Classes")+
+  scale_fill_manual(values = c("dodgerblue2", "#E31A1C","green4",
+                               "#6A3D9A", "#FF7F00",
+                               "gold1","maroon"),
+                    name = "Land Cover Classes",
+                    labels = c("Agriculture & Vegetation", "Complex Agriculture",
+                               "Forests", "Moors, Heathland & Grassland",
+                               "Sparse Vegetation", "Transitional Woodland Shrub",
+                               "Urban Fabric"))+
+  scale_x_discrete(labels = c("Agri & Veg", "Complex Agri",
+                              "Forests", "Moors, Heath & Grass",
+                              "Sparse Vege", "Trans Wood",
+                              "Urban Fabric"))+
+  geom_hline(yintercept = 0)+
+  theme_classic()
+  #theme(axis.text.x = element_text(hjust = 1))
+
+# Barplot of transitions between intensification and extensification
+intens_extens <- ggplot(intens_extens_gain_loss_2000_2006, aes(x = focus, y = scaled_count,
+                                                               fill = transition_meaning))+
+  geom_bar(stat="identity", position="stack")+
+  scale_y_continuous(
+    name = bquote("Area changes"~("km"^2)),
+    sec.axis = sec_axis(~ . * scaling_factor, name = bquote("Area changes"~("km"^2)))
+  )+
+  xlab("Land Cover Classes")+
+  scale_fill_manual(values = c("green4", "#FF7F00"),
+                    name = "Transition Type",
+                    labels = c("Nature Gain", "Nature Loss"))+ 
+  scale_x_discrete(labels = c("Agri & Veg", "Complex Agri",
+                              "Forests", "Moors, Heath & Grass",
+                              "Sparse Vege", "Trans Wood",
+                              "Urban Fabric"))+
+  geom_hline(yintercept = 0)+
+  theme_classic()
+  #theme(axis.text.x = element_text(hjust = 1))
+
+# Combine in one plot
+plot_grid(cover_classes, intens_extens,
+          labels = c("A", "B"),
+          nrow = 2,
+          align = "v")
+
+# Save plot
 
 # 3. LAND COVER TRANSITIONS BETWEEN 2006 AND 2012 ----
 ## 3.1. Calculate change between 2006 and 2012 ----
