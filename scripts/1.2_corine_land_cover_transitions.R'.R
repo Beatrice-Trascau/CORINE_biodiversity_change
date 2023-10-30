@@ -391,8 +391,10 @@ cover_classes <- ggplot(gain_loss_2000_2006, aes(x = focus, y = scaled_count,
                               "Sparse Vege", "Trans Wood",
                               "Urban Fabric"))+
   geom_hline(yintercept = 0)+
-  theme_classic()
-  #theme(axis.text.x = element_text(hjust = 1))
+  theme_classic()+
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 30,
+                                   hjust = 1))
 
 # Barplot of transitions between intensification and extensification
 intens_extens <- ggplot(intens_extens_gain_loss_2000_2006, aes(x = focus, y = scaled_count,
@@ -411,14 +413,16 @@ intens_extens <- ggplot(intens_extens_gain_loss_2000_2006, aes(x = focus, y = sc
                               "Sparse Vege", "Trans Wood",
                               "Urban Fabric"))+
   geom_hline(yintercept = 0)+
-  theme_classic()
-  #theme(axis.text.x = element_text(hjust = 1))
+  theme_classic()+
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 30,
+                                   hjust = 1))
 
 # Combine in one plot
 plot_grid(cover_classes, intens_extens,
           labels = c("A", "B"),
-          nrow = 2,
-          align = "v")
+          ncol = 2,
+          align = "h")
 
 # Save plot
 
