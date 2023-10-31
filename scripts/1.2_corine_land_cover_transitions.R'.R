@@ -369,6 +369,11 @@ ggsave(here("figures", "intens_extens_barplot_2000_2006_dual_yaxis.svg"),
 
 ### 2.6.5. Combined plots from 2.6.3. and 2.6.4. ----
 
+wrapped_lables <- str_wrap(c("Agriculture & Vegetation", "Complex Agriculture",
+                             "Forests", "Moors, Heathland & Grassland",
+                             "Sparse Vegetation", "Transitional Woodland Shrub",
+                             "Urban Fabric"))
+
 # Barplot of transitions between land cover classes
 cover_classes <- ggplot(gain_loss_2000_2006, aes(x = focus, y = scaled_count,
                                                  fill = transition))+
@@ -382,10 +387,7 @@ cover_classes <- ggplot(gain_loss_2000_2006, aes(x = focus, y = scaled_count,
                                "#6A3D9A", "#FF7F00",
                                "gold1","maroon"),
                     name = "Land Cover Classes",
-                    labels = c("Agriculture & Vegetation", "Complex Agriculture",
-                               "Forests", "Moors, Heathland & Grassland",
-                               "Sparse Vegetation", "Transitional Woodland Shrub",
-                               "Urban Fabric"))+
+                    labels = wrapped_lables)+
   scale_x_discrete(labels = c("Agri & Veg", "Complex Agri",
                               "Forests", "Moors, Heath & Grass",
                               "Sparse Vege", "Trans Wood",
@@ -394,7 +396,8 @@ cover_classes <- ggplot(gain_loss_2000_2006, aes(x = focus, y = scaled_count,
   theme_classic()+
   theme(legend.position = "bottom",
         axis.text.x = element_text(angle = 30,
-                                   hjust = 1))
+                                   hjust = 1))+
+  guides(fill = guide_legend(ncol = 2))
 
 # Barplot of transitions between intensification and extensification
 intens_extens <- ggplot(intens_extens_gain_loss_2000_2006, aes(x = focus, y = scaled_count,
@@ -405,7 +408,7 @@ intens_extens <- ggplot(intens_extens_gain_loss_2000_2006, aes(x = focus, y = sc
     sec.axis = sec_axis(~ . * scaling_factor, name = bquote("Area changes"~("km"^2)))
   )+
   xlab("Land Cover Classes")+
-  scale_fill_manual(values = c("green4", "#FF7F00"),
+  scale_fill_manual(values = c("lightgreen", "sienna"),
                     name = "Transition Type",
                     labels = c("Nature Gain", "Nature Loss"))+ 
   scale_x_discrete(labels = c("Agri & Veg", "Complex Agri",
@@ -416,7 +419,8 @@ intens_extens <- ggplot(intens_extens_gain_loss_2000_2006, aes(x = focus, y = sc
   theme_classic()+
   theme(legend.position = "bottom",
         axis.text.x = element_text(angle = 30,
-                                   hjust = 1))
+                                   hjust = 1))+
+  guides(fill = guide_legend(ncol = 2))
 
 # Combine in one plot
 plot_grid(cover_classes, intens_extens,
@@ -424,7 +428,10 @@ plot_grid(cover_classes, intens_extens,
           ncol = 2,
           align = "h")
 
+
 # Save plot
+ggsave(here("figures", "dynamic_land_cover_transitions_combined_2000_2006.svg"),
+       width = 12, height = 7.37)
 
 # 3. LAND COVER TRANSITIONS BETWEEN 2006 AND 2012 ----
 ## 3.1. Calculate change between 2006 and 2012 ----
