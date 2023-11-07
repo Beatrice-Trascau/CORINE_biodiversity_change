@@ -6,8 +6,8 @@
 ###- 5.1_model_fitting_occurrence_turnover_500m -###
 ##------------------------------------------------##
 
-#This script contains code fitting models to the turnover of occurrence records in the 
- #intensification and extnsification 500m grids derived from CORINE
+# This script contains code fitting models to the turnover of occurrence records in the 
+ # intensification and extnsification 500m grids derived from CORINE
 
 # 0.PACKAGES ----
 library(here)
@@ -20,10 +20,10 @@ library(lme4)
 library(betareg)
 library(mgcv)
 library(psych)
-source("HighstatLibV14.R") #useful functions from GAM course, see below
+source("HighstatLibV14.R") # Useful functions from GAM course, see below
 # Remember to cite this library as:
 # Mixed effects models and extensions in ecology with R. (2009).
-#Zuur, AF, Ieno, EN, Walker, N, Saveliev, AA, and Smith, GM. Springer
+# Zuur, AF, Ieno, EN, Walker, N, Saveliev, AA, and Smith, GM. Springer
 
 # 1. READ IN AND PREPARE DATA ----
 
