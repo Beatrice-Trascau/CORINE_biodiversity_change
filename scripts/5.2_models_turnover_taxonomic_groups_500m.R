@@ -509,7 +509,7 @@ ggsave(here("figures",
 all_intens_corr$year <- as.numeric(as.character(all_intens_corr$year))
 
 # Run beta GAM
-m1 <- gam(turnover ~ s(year, k = 3) + intensification_amount + taxonomic_group,
+m1 <- gam(turnover ~ s(year, k = 3) + s(new_cell) + intensification_amount + taxonomic_group,
           method = "REML",
           family = betar,
           data = all_intens_corr)
