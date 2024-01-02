@@ -106,7 +106,7 @@ groups_turnover_long <- groups_turnover |>
          new_cell = cell$U2006_CLC2000_V2020_20u1,
          ID = paste(new_cell, year, sep = "_")) |>
   #remove unnecessary turnover_year column
-  select(-c(turnover_year, cell, new_cell))
+  select(-c(turnover_year, cell))
 
 
 # Create separate df for intensification (land cover)
