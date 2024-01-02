@@ -488,7 +488,7 @@ dev.off()
 
 # 8. EXTENSIFICATION CORRELATIONS ----
 
-## 8.2. Turnover correlations when there is some extensification ----
+## 8.1. Turnover correlations when there is some extensification ----
 # Subset dataframe to contain turnover values when there is at least one change throughout the years of sampling
 some_extens_corr <- extens_turnover |>
   filter(extens_2000.2006 != 0 | extens_2006.2012 != 0 | extens_2012.2018 != 0) |>
@@ -504,7 +504,7 @@ pairs.panels(some_extens_corr)
 # Close SVG device
 dev.off()
 
-## 7.3. Turnover correlations when there is only extensification ----
+## 8.2. Turnover correlations when there is only extensification ----
 # Subset dataframe to contain turnover values when all years have a non-zero value for intensification
 all_extens_corr <- extens_turnover |>
   filter(extens_2000.2006 != 0 | extens_2006.2012 != 0 | extens_2012.2018 != 0) |>
