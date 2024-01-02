@@ -6,9 +6,7 @@
 ###- 5.2_models_turnover_taxonomic_groups_500m -####
 ##------------------------------------------------##
 
-# This script contains code fitting models to the turnover of occurrence records
-# broken down by taxonomic groups in the intensification 500m grids derived
-# from CORINE
+# This script contains code fitting models to the turnover of occurrence records broken down by taxonomic groups in the intensification 500m grids derived from CORINE
 
 # 0. PACKAGES ----
 library(here)
@@ -21,6 +19,7 @@ library(lme4)
 library(betareg)
 library(mgcv)
 library(psych)
+library(DHARMa)
 source("HighstatLibV14.R") # useful functions from GAM course, see below
 # Remember to cite this library as:
 # Mixed effects models and extensions in ecology with R. (2009).
@@ -382,6 +381,10 @@ ggplot(all_intens_corr, aes(x = intensification_amount, y= turnover,
                                                color = taxonomic_group))+
   geom_point(size = 2)+
   geom_smooth(method = "gam", formula = y ~ s(x, k = 5))+
+    scale_x_continuous(name = "Intensification Amount",
+                     breaks = c(1, 5, 10, 15, 20, 25),
+                     labels = c("4%", "20%", "40%",
+                                "60%", "80%", "100%"))+
   facet_wrap(~taxonomic_group)+
   xlab("Intensification")+
   ylab("Turnover")+
@@ -500,11 +503,13 @@ ggsave(here("figures",
 
 # 3. GAM with non-zero intensification ----
 
+## 3.1. Run model ----
+
 # Convert year to numeric
 all_intens_corr$year <- as.numeric(as.character(all_intens_corr$year))
 
 # Run beta GAM
-m1 <- gam(turnover ~ s(year, k = 3) + s(intensification_amount) + s(taxonomic_group, k = 3),
+m1 <- gam(turnover ~ s(year, k = 3) + intensification_amount + taxonomic_group,
           method = "REML",
           family = betar,
           data = all_intens_corr)
@@ -512,3 +517,28 @@ m1 <- gam(turnover ~ s(year, k = 3) + s(intensification_amount) + s(taxonomic_gr
 summary(m1)
 draw(m1)
 gam.check(m1)
+
+## 3.2 Model validation ----
+
+# Simulate residuals
+simulationOutput <- simulateResiduals(fittedModel = m1)
+
+# Plot the simulate residuals
+plot(simulationOutput) # Horrible violations of all the assumptions
+
+# 4. GAMM ----
+
+## 4.1. Model formulation ----
+m2 <- gamm(turnover ~ s(year, k = 3) + intensification_amount + taxonomic_group)
+
+
+year_gam <- gamm(nottem ~ s(nottem_year) + s(nottem_month, bs = "cc"),
+                 data = df)
+
+year_gam_AR1 <- gamm(nottem ~ s(nottem_year) + s(nottem_month,
+                                                 bs = "cc"), correlation = corARMA(form = ~1 | nottem_year,
+                                                                                   p = 1), data = df)
+
+year_gam_AR2 <- gamm(nottem ~ s(nottem_year) + s(nottem_month,
+                                                 bs = "cc"), correlation = corARMA(form = ~1 | nottem_year,
+                                                                                   p = 2), data = df)
