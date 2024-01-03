@@ -12,6 +12,7 @@
 library(here)
 library(dplyr)
 library(tidyverse)
+library(sf)
 library(ggplot2)
 library(lattice)
 library(cowplot)
@@ -71,14 +72,36 @@ groups_turnover <-  rbind(plantae_turnover, aves_turnover,
 
 ## 1.3. Clean the combined dataframe ---
 
+### 1.3.1. Extract coordinates from geometry column for each record ----
+
+# Function to check for different types of geometries
+extract_coords <- function(geometry) {
+  if (class(geometry)[1] == "POINT") {
+    return(st_coordinates(geometry))
+  } else if (class(geometry)[1] %in% c("POLYGON", "MULTIPOLYGON")) {
+    return(st_coordinates(st_centroid(geometry)))
+  } else {
+    # Handle other geometry types as needed
+    return(NA)
+  }
+}
+
+# Extract geometries unsing the extract_coords function
+groups_turnover_coords <- groups_turnover |>
+  rowwise() |>
+  mutate(
+    coords = list(extract_coords(geometry_1997.2000)),
+    x = coords[[1]][1],
+    y = coords[[1]][2]
+  ) |>
+  ungroup()
+
 # Remove unnecessary columns
 groups_turnover <- groups_turnover |>
-  select(-c(species_1997.2000, geometry_1997.2000,
-            species_2006.2009, geometry_2006.2009, 
-            species_2003.2006, geometry_2003.2006,
-            species_2012.2015, geometry_2012.2015,
+  select(-c(species_1997.2000, species_2006.2009,
+            species_2003.2006, species_2012.2015,
             species_2009.2012, geometry_2009.2012,
-            species_2015.2018, geometry_2015.2018)) |>
+            species_2015.2018)) |>
   # Remove rows with NA for intensification and NaN for turnover
   filter_at(vars(cover_change_2000.2006, cover_change_2006.2012, cover_change_2012.2018),
             all_vars(!is.na(.))) |>
@@ -542,3 +565,12 @@ year_gam_AR1 <- gamm(nottem ~ s(nottem_year) + s(nottem_month,
 year_gam_AR2 <- gamm(nottem ~ s(nottem_year) + s(nottem_month,
                                                  bs = "cc"), correlation = corARMA(form = ~1 | nottem_year,
                                                                                    p = 2), data = df)
+
+# Calculate Xkm  and Ykm
+# code adapted from GAM course
+XY.utm <- UTM_Transform(x = QC3$Longitude, 
+                        y = QC3$Latitude, 
+                        zone = 20, 
+                        Hemisphere = "north") 
+QC3$Xkm <- XY.utm[,"X"] / 1000 #' Expressed in km.
+QC3$Ykm <- XY.utm[,"Y"] / 1000 #' Expressed in km
