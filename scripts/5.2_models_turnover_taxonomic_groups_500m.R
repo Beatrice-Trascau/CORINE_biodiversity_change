@@ -13,6 +13,7 @@ library(here)
 library(dplyr)
 library(tidyverse)
 library(sf)
+library(purrr)
 library(ggplot2)
 library(lattice)
 library(cowplot)
@@ -70,32 +71,53 @@ insecta_turnover <- insecta_turnover |>
 groups_turnover <-  rbind(plantae_turnover, aves_turnover,
                           mammalia_turnover, insecta_turnover)
 
-## 1.3. Clean the combined dataframe ---
+# 2. CLEAN COMBINED DATAFRAME ----
 
-### 1.3.1. Extract coordinates from geometry column for each record ----
+## 2.1. Extract coordinates from geometry columns
 
-# Function to check for different types of geometries
-extract_coords <- function(geometry) {
-  if (class(geometry)[1] == "POINT") {
-    return(st_coordinates(geometry))
-  } else if (class(geometry)[1] %in% c("POLYGON", "MULTIPOLYGON")) {
-    return(st_coordinates(st_centroid(geometry)))
-  } else {
-    # Handle other geometry types as needed
-    return(NA)
-  }
+# Make a list of the geometry columns
+geometry_columns <- c("geometry_1997.2000",
+                      "geometry_2006.2009",
+                      "geometry_2003.2006",
+                      "geometry_2012.2015",
+                      "geometry_2009.2012",
+                      "geometry_2015.2018")
+
+
+# Loop through each geometry column
+for(col_name in geometry_columns){
+  # print column name
+  cat("Processing column:", col_name, "\n")
+  
+  # check if the column exists in the df
+  #if (!col_name %in% names(groups_turnover)) {
+    #cat("Column not found in the dataframe:", col_name, "\n")
+    #next  # Skip this iteration
+  #}
+  
+  # extract geometry column
+  geometry_col <- groups_turnover[[col_name]]
+  
+  # cast to specific geometry (POINT)
+  points <- st_cast(geometry_col, "POINT")
+  
+  # extract coordinates
+  coords <- st_coordinates(points)
+  coords_df <- as.data.frame(coords)
+  
+  # create new column names for the coordinates
+  new_col_names <- paste0(col_name, "_coords_",
+                          names(coords_df))
+  
+  # rename the columns of the coords_df to avoid namne clashes
+  names(coords_df) <- new_col_names
+  
+  # bind the new columns to the original dataframe
+  groups_turnover_coords <- cbind(groups_turnover, coords_df)
 }
 
-# Extract geometries unsing the extract_coords function
-groups_turnover_coords <- groups_turnover |>
-  rowwise() |>
-  mutate(
-    coords = list(extract_coords(geometry_1997.2000)),
-    x = coords[[1]][1],
-    y = coords[[1]][2]
-  ) |>
-  ungroup()
 
+## 2.2. Clean dataframe ----
 # Remove unnecessary columns
 groups_turnover <- groups_turnover |>
   select(-c(species_1997.2000, species_2006.2009,
@@ -169,9 +191,9 @@ intens_turnover_by_group_for_model <- intens_turnover_by_group_for_model |>
   select(-c(year.x, taxonomic_group.x))
 
 
-# 2. DATA EXPLORATION ----
+# 3. DATA EXPLORATION ----
 
-## 2.1. Zeros ----
+## 3.1. Zeros ----
 # Check how many observations in the response variable are = 0
 zeros_response <- 100 * sum(intens_turnover_by_group_for_model$turnover 
                             == 0) / nrow(intens_turnover_by_group_for_model)
@@ -182,7 +204,7 @@ zeros_explan <- 100 * sum(intens_turnover_by_group_for_model$intensification_amo
                           == 0) / nrow(intens_turnover_by_group_for_model)
 zeros_explan # = 98.26
 
-## 2.2. Outliers ----
+## 3.2. Outliers ----
 # Cleaveland dotplot for the response variable and covariates
 # Here I am using the cleaveland dotplot code provided in the "Generalised Additve Models for 
 # the analysis of spatial and spatial-temporal data" (04.09 - 07.09.2023)
@@ -197,7 +219,7 @@ Mydotplot(intens_turnover_by_group_for_model[,ToPlot])
 # Save Cleaveland dotplot to file
 svg(here("figures", "cleaveland_dotplot_turnover_intensification.svg"))
 
-## 2.3. Normality ----
+## 3.3. Normality ----
 # Plot histogram of all turnover values 
 all_turnover <- ggplot(intens_turnover_by_group_for_model, 
                        aes(x = turnover))+
@@ -249,7 +271,7 @@ ggsave(filename = here("figures",
                        "turnover_intensification_hist_taxonomic_group.svg"),
        width = 10, height = 5.37)
 
-## 2.4. Collinearity ----
+## 3.4. Collinearity ----
 
 # Check for collinearity between covariates
 # Pairplot of covariates
@@ -261,7 +283,7 @@ svg(here("figures",
          "collinearity_check_covariates.svg"))
 dev.off()
 
-## 2.5. Relationships ----
+## 3.5. Relationships ----
 
 # Convert year and taxonomic group columns to factor
 intens_turnover_by_group_for_model$taxonomic_group <- as.factor(intens_turnover_by_group_for_model$taxonomic_group)
@@ -284,7 +306,7 @@ ggsave(here("figures",
             "turnover_intensification_relationshio_by_taxonomic_group.svg"),
        width = 10, height = 5.37)
 
-### 2.5.1. Relationship by year for each taxonomic group: Aves ----
+### 3.5.1. Relationship by year for each taxonomic group: Aves ----
 
 # Create new facet labels
 new_labels <- c("2000.2006" = "2000 - 2006",
@@ -315,7 +337,7 @@ ggsave(here("figures",
             "aves_turnover_intensification_by_year.svg"),
        width = 10, height = 5.37)
 
-### 2.5.2. Relationship by year for each taxonomic group: Insecta ----
+### 3.5.2. Relationship by year for each taxonomic group: Insecta ----
 
 # Filter df to only have bird records 
 insecta_turnover_for_model <- intens_turnover_by_group_for_model |>
@@ -341,7 +363,7 @@ ggsave(here("figures",
             "insecta_turnover_intensification_by_year.svg"),
        width = 10, height = 5.37)
 
-### 2.5.3. Relationship by year for each taxonomic group: Mammalia ----
+### 3.5.3. Relationship by year for each taxonomic group: Mammalia ----
 
 # Filter df to only have bird records 
 mammalia_turnover_for_model <- intens_turnover_by_group_for_model |>
@@ -367,7 +389,7 @@ ggsave(here("figures",
             "mammalia_turnover_intensification_by_year.svg"),
        width = 10, height = 5.37)
 
-### 2.5.4. Relationship by year for each taxonomic group: Plantae ----
+### 3.5.4. Relationship by year for each taxonomic group: Plantae ----
 
 # Filter df to only have bird records 
 plantae_turnover_for_model <- intens_turnover_by_group_for_model |>
@@ -393,7 +415,7 @@ ggsave(here("figures",
             "plantae_turnover_intensification_by_year.svg"),
        width = 10, height = 5.37)
 
-## 2.6. Relationships without 0s ----
+## 3.6. Relationships without 0s ----
 
 # Subset dataframe to contain turnover values when all years have a non-zero value for intensification
 all_intens_corr <- intens_turnover_by_group_for_model |>
@@ -421,7 +443,7 @@ ggsave(here("figures",
             "turnover_non0_intensification_relationship_by_taxonomic_group.svg"),
        width = 10, height = 5.37)
 
-### 2.6.1. Relationship by year for each taxonomic group: Aves ----
+### 3.6.1. Relationship by year for each taxonomic group: Aves ----
 
 # Filter df to only have bird records 
 aves_non0_turnover_for_model <- all_intens_corr |>
@@ -447,7 +469,7 @@ ggsave(here("figures",
             "aves_turnover_non0_intensification_by_year.svg"),
        width = 10, height = 5.37)
 
-### 2.6.2. Relationship by year for each taxonomic group: Insecta ----
+### 3.6.2. Relationship by year for each taxonomic group: Insecta ----
 
 # Filter df to only have bird records 
 insecta_non0_turnover_for_model <- all_intens_corr |>
@@ -472,7 +494,7 @@ ggsave(here("figures",
             "insecta_turnover_non0_intensification_by_year.svg"),
        width = 10, height = 5.37)
 
-### 2.6.3. Relationship by year for each taxonomic group: Mammalia ----
+### 3.6.3. Relationship by year for each taxonomic group: Mammalia ----
 
 # Filter df to only have bird records 
 mammalia_non0_turnover_for_model <- all_intens_corr |>
@@ -498,7 +520,7 @@ ggsave(here("figures",
             "mammalia_turnover_non0_intensification_by_year.svg"),
        width = 10, height = 5.37)
 
-### 2.6.4. Relationship by year for each taxonomic group: Plantae ----
+### 3.6.4. Relationship by year for each taxonomic group: Plantae ----
 
 # Filter df to only have bird records 
 plantae_non0_turnover_for_model <- all_intens_corr |>
@@ -524,9 +546,9 @@ ggsave(here("figures",
             "plantae_turnover_non0_intensification_by_year.svg"),
        width = 10, height = 5.37)
 
-# 3. GAM with non-zero intensification ----
+# 4. GAM with non-zero intensification ----
 
-## 3.1. Run model ----
+## 4.1. Run model ----
 
 # Convert year to numeric
 all_intens_corr$year <- as.numeric(as.character(all_intens_corr$year))
@@ -541,7 +563,7 @@ summary(m1)
 draw(m1)
 gam.check(m1)
 
-## 3.2 Model validation ----
+## 4.2 Model validation ----
 
 # Simulate residuals
 simulationOutput <- simulateResiduals(fittedModel = m1)
@@ -549,9 +571,9 @@ simulationOutput <- simulateResiduals(fittedModel = m1)
 # Plot the simulate residuals
 plot(simulationOutput) # Horrible violations of all the assumptions
 
-# 4. GAMM ----
+# 5. GAMM ----
 
-## 4.1. Model formulation ----
+## 5.1. Model formulation ----
 m2 <- gamm(turnover ~ s(year, k = 3) + intensification_amount + taxonomic_group)
 
 
