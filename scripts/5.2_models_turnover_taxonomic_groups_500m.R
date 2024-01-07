@@ -75,6 +75,9 @@ groups_turnover <-  rbind(plantae_turnover, aves_turnover,
 
 ## 2.1. Extract coordinates from geometry columns
 
+# Make a copy of tha dataframe that you can edit
+groups_turnover_coords <- groups_turnover
+
 # Make a list of the geometry columns
 geometry_columns <- c("geometry_1997.2000",
                       "geometry_2006.2009",
@@ -86,14 +89,8 @@ geometry_columns <- c("geometry_1997.2000",
 
 # Loop through each geometry column
 for(col_name in geometry_columns){
-  # print column name
+  # print column name to check that they will all be processed
   cat("Processing column:", col_name, "\n")
-  
-  # check if the column exists in the df
-  #if (!col_name %in% names(groups_turnover)) {
-    #cat("Column not found in the dataframe:", col_name, "\n")
-    #next  # Skip this iteration
-  #}
   
   # extract geometry column
   geometry_col <- groups_turnover[[col_name]]
@@ -113,17 +110,19 @@ for(col_name in geometry_columns){
   names(coords_df) <- new_col_names
   
   # bind the new columns to the original dataframe
-  groups_turnover_coords <- cbind(groups_turnover, coords_df)
+  groups_turnover_coords <- cbind(groups_turnover_coords, coords_df)
 }
 
 
 ## 2.2. Clean dataframe ----
 # Remove unnecessary columns
-groups_turnover <- groups_turnover |>
+clean_groups_turnover_coords <- groups_turnover_coords |>
   select(-c(species_1997.2000, species_2006.2009,
             species_2003.2006, species_2012.2015,
-            species_2009.2012, geometry_2009.2012,
-            species_2015.2018)) |>
+            species_2009.2012, species_2015.2018,
+            geometry_1997.2000, geometry_2006.2009,
+            geometry_2003.2006, geometry_2012.2015,
+            geometry_2009.2012, geometry_2015.2018)) |>
   # Remove rows with NA for intensification and NaN for turnover
   filter_at(vars(cover_change_2000.2006, cover_change_2006.2012, cover_change_2012.2018),
             all_vars(!is.na(.))) |>
@@ -134,11 +133,17 @@ groups_turnover <- groups_turnover |>
          intens_2006.2012 = cover_change_2006.2012,
          intens_2012.2018 = cover_change_2012.2018)
 
-# Create separate df for turnover
-groups_turnover_long <- groups_turnover |>
+# Create separate df for turnover   
+groups_turnover_long <- clean_groups_turnover_coords |>
   #select only the turnover columns
   select(c(cell, turover2000.2006, turover2006.2012,
-           turover2012.2018, taxonomic_group)) |>
+           turover2012.2018, taxonomic_group,
+           geometry_1997.2000_coords_X, geometry_1997.2000_coords_Y,
+           geometry_2006.2009_coords_X,  geometry_2006.2009_coords_Y,
+           geometry_2003.2006_coords_X, geometry_2003.2006_coords_Y,
+           geometry_2012.2015_coords_X, geometry_2012.2015_coords_Y,
+           geometry_2009.2012_coords_X,  geometry_2009.2012_coords_Y,
+           geometry_2015.2018_coords_X, geometry_2015.2018_coords_Y)) |>
   #convert to long format
   pivot_longer(
     cols = "turover2000.2006":"turover2012.2018",
@@ -155,7 +160,7 @@ groups_turnover_long <- groups_turnover |>
 
 
 # Create separate df for intensification (land cover)
-intens_long <- groups_turnover |>
+intens_long <- clean_groups_turnover_coords |>
   #select only the turnover columns
   select(c(cell, intens_2000.2006, intens_2006.2012,
            intens_2012.2018, taxonomic_group)) |>
@@ -184,12 +189,95 @@ colnames(intens_turnover_by_group_for_model)
 setequal(intens_turnover_by_group_for_model$year.x, 
          intens_turnover_by_group_for_model$year.y) #TRUE
 
-# Remove year.x and year.y columns
+# Remove year.x and year.y columns and rows without coordinates
 intens_turnover_by_group_for_model <- intens_turnover_by_group_for_model |>
+  filter_at(vars(geometry_1997.2000_coords_X, geometry_1997.2000_coords_Y,
+                 geometry_2006.2009_coords_X, geometry_2006.2009_coords_Y,
+                 geometry_2003.2006_coords_X, geometry_2003.2006_coords_Y,
+                 geometry_2012.2015_coords_X, geometry_2012.2015_coords_Y,
+                 geometry_2009.2012_coords_X, geometry_2009.2012_coords_Y,
+                 geometry_2015.2018_coords_X, geometry_2015.2018_coords_Y),
+            all_vars(!is.na(.))) |>
   mutate(year = as.factor(year.y),
          taxonomic_group = as.factor(taxonomic_group.y)) |>
   select(-c(year.x, taxonomic_group.x))
 
+## 2.3. Calculate Xkm and Ykm ----
+
+# The below code is adapted from the Highland Statistics GAM Course
+# Doing this stepwise for each time period included in model
+
+### 2.3.1. Xkm and Ykm 1997-2000 ----
+
+# Transform coordinates to UTM
+XY.utm <- UTM_Transform(x = intens_turnover_by_group_for_model$geometry_1997.2000_coords_X, 
+                        y = intens_turnover_by_group_for_model$geometry_1997.2000_coords_Y, 
+                        zone = 20, 
+                        Hemisphere = "north") 
+
+# Convert UTM  coordinates to kilometers
+intens_turnover_by_group_for_model$Xkm_1997.2000 <- XY.utm[,"X"] / 1000
+intens_turnover_by_group_for_model$Ykm_1997.2000<- XY.utm[,"Y"] / 1000
+
+### 2.3.2. Xkm and Ykm 2006-2009 ----
+
+# Transform coordinates to UTM
+XY.utm <- UTM_Transform(x = intens_turnover_by_group_for_model$geometry_2006.2009_coords_X, 
+                        y = intens_turnover_by_group_for_model$geometry_2006.2009_coords_Y, 
+                        zone = 20, 
+                        Hemisphere = "north") 
+
+# Convert UTM  coordinates to kilometers
+intens_turnover_by_group_for_model$Xkm_2006.2009 <- XY.utm[,"X"] / 1000
+intens_turnover_by_group_for_model$Ykm_2006.2009<- XY.utm[,"Y"] / 1000
+
+## 2.3.3. Xkm and Ykm 2003-2006 ----
+
+# Transform coordinates to UTM
+XY.utm <- UTM_Transform(x = intens_turnover_by_group_for_model$geometry_2003.2006_coords_X, 
+                        y = intens_turnover_by_group_for_model$geometry_2003.2006_coords_Y, 
+                        zone = 20, 
+                        Hemisphere = "north") 
+
+# Convert UTM  coordinates to kilometers
+intens_turnover_by_group_for_model$Xkm_2003.2006 <- XY.utm[,"X"] / 1000
+intens_turnover_by_group_for_model$Ykm_2003.2006<- XY.utm[,"Y"] / 1000
+
+## 2.3.4. Xkm and Ykm 2012-2015 ----
+
+# Transform coordinates to UTM
+XY.utm <- UTM_Transform(x = intens_turnover_by_group_for_model$geometry_2012.2015_coords_X, 
+                        y = intens_turnover_by_group_for_model$geometry_2012.2015_coords_Y, 
+                        zone = 20, 
+                        Hemisphere = "north") 
+
+# Convert UTM  coordinates to kilometers
+intens_turnover_by_group_for_model$Xkm_2012.2015 <- XY.utm[,"X"] / 1000
+intens_turnover_by_group_for_model$Ykm_2012.2015<- XY.utm[,"Y"] / 1000
+
+## 2.3.5. Xkm and Ykm 2009-2012 ----
+
+# Transform coordinates to UTM
+XY.utm <- UTM_Transform(x = intens_turnover_by_group_for_model$geometry_2009.2012_coords_X, 
+                        y = intens_turnover_by_group_for_model$geometry_2009.2012_coords_Y, 
+                        zone = 20, 
+                        Hemisphere = "north") 
+
+# Convert UTM  coordinates to kilometers
+intens_turnover_by_group_for_model$Xkm_2009.2012 <- XY.utm[,"X"] / 1000
+intens_turnover_by_group_for_model$Ykm_2009.2012<- XY.utm[,"Y"] / 1000
+
+## 2.3.6. Xkm and Ykm 2009-2012 ----
+
+# Transform coordinates to UTM
+XY.utm <- UTM_Transform(x = intens_turnover_by_group_for_model$geometry_2015.2018_coords_X, 
+                        y = intens_turnover_by_group_for_model$geometry_2015.2018_coords_Y, 
+                        zone = 20, 
+                        Hemisphere = "north") 
+
+# Convert UTM  coordinates to kilometers
+intens_turnover_by_group_for_model$Xkm_2015.2018 <- XY.utm[,"X"] / 1000
+intens_turnover_by_group_for_model$Ykm_2015.2018<- XY.utm[,"Y"] / 1000
 
 # 3. DATA EXPLORATION ----
 
@@ -587,12 +675,3 @@ year_gam_AR1 <- gamm(nottem ~ s(nottem_year) + s(nottem_month,
 year_gam_AR2 <- gamm(nottem ~ s(nottem_year) + s(nottem_month,
                                                  bs = "cc"), correlation = corARMA(form = ~1 | nottem_year,
                                                                                    p = 2), data = df)
-
-# Calculate Xkm  and Ykm
-# code adapted from GAM course
-XY.utm <- UTM_Transform(x = QC3$Longitude, 
-                        y = QC3$Latitude, 
-                        zone = 20, 
-                        Hemisphere = "north") 
-QC3$Xkm <- XY.utm[,"X"] / 1000 #' Expressed in km.
-QC3$Ykm <- XY.utm[,"Y"] / 1000 #' Expressed in km
