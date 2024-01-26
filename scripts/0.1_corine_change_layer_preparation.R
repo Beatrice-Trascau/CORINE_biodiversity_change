@@ -35,9 +35,26 @@ library(geodata)
 # download.file(U2018_CHA1218_18_V2020_20u1, "U2018_CHA1218_18_V2020_20u1.tif")
 
 ## 1.2. Read in layers -----
+
+# Read in the CORINE CHANGE layers
 corine_change0006_00 <- rast(here("data", "raw_data", "U2006_CHA0006_00_V2020_20u1.tif"))
 corine_change0006_06 <- rast(here("data", "raw_data", "U2006_CHA0006_06_V2020_20u1.tif"))
 corine_change0612_06 <- rast(here("data", "raw_data", "U2012_CHA0612_06_V2020_20u1.tif"))
 corine_change0612_12 <- rast(here("data", "raw_data", "U2012_CHA0612_12_V2020_20u1.tif"))
 corine_change1218_12 <- rast(here("data", "raw_data", "U2018_CHA1218_12_V2020_20u1.tif"))
 corine_change1218_18 <- rast(here("data", "raw_data", "U2018_CHA1218_18_V2020_20u1.tif"))
+
+# Stack layers into 1 object
+corine_change_stack <- c(corine_change0006_00, corine_change0006_06,
+                         corine_change0612_06, corine_change0612_12,
+                         corine_change1218_12, corine_change1218_18)
+
+# 2. CUT AND MASK LAYERS TO NORWAY ----
+
+## 2.1. Download country shapefile ----
+norway <- geodata::gadm(country = "NOR", level = 0, 
+                        path = tempdir(),
+                        version = "latest")
+#Check shapefile
+plot(norway)
+
