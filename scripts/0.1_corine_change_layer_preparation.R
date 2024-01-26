@@ -78,4 +78,4 @@ norway_corine_change_stack <- crop(corine_change_stack, norway_corine_projection
 
 # Save the cropped layers 
 terra::writeRaster(norway_corine_change_stack,
-                   here("data", "norway_corine_stack.tif"))
+                   here("data", "norway_corine_change_stack.tif"))
