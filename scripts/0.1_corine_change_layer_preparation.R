@@ -79,3 +79,51 @@ norway_corine_change_stack <- crop(corine_change_stack, norway_corine_projection
 # Save the cropped layers 
 terra::writeRaster(norway_corine_change_stack,
                    here("data", "norway_corine_change_stack.tif"))
+
+# Check the newly cut layers
+mapview(norway_corine_change_stack[[1]])
+
+# 3. CHANGE COVER LAYERS TO HELP IDENTIFY CHANGE ----
+#The class codes/values are changed to unique numbers which will help identify the land cover transitions between years
+#this will only be done for the Norway stack, as this is the one that will be used for analysis
+
+## 3.1. Change land cover class values ----
+
+# Urban Fabric
+# all the urban classes are pooled together, due to their sparse distribution across Norway
+norway_corine_change_modified <- app(norway_corine_change_stack,
+                                     fun = function(x){x[x %in% c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)] <- 1; 
+                                     return(x)})
+
+# Complex agricultural patterns
+norway_corine_change_modified <- app(norway_corine_change_modified,
+                                     fun = function(x){x[x %in% c(12, 18, 20)] <- 80; 
+                                     return(x)})
+
+# Agriculture and significant natural vegetation
+norway_corine_change_modified <- app(norway_corine_change_modified,
+                                     fun = function(x){x[x == 21] <- 103; 
+                                     return(x)})
+
+# Forests
+norway_corine_change_modified <- app(norway_corine_change_modified,
+                                     fun = function(x){x[x %in% c(23, 24, 25)] <- 250; 
+                                     return(x)})
+
+# Moors, Heathland & Natural Grassland
+norway_corine_change_modified <- app(norway_corine_change_modified,
+                                     fun = function(x){x[x %in% c(26, 27)] <- 380; 
+                                     return(x)})
+# Transitional woodland shrub
+norway_corine_change_modified <- app(norway_corine_change_modified,
+                                     fun = function(x){x[x == 29] <- 590; return(x)})
+
+# Sparsely vegetated areas
+norway_corine_change_modified <- app(norway_corine_change_modified,
+                                     fun = function(x){x[x == 32] <- 711; return(x)})
+
+# Other classes
+norway_corine_change_modified <- app(norway_corine_change_modified,
+                                     fun = function(x){x[x %in% c(30, 31, 33, 34, 35, 36, 39, 40, 41, 43, 44)] <- 127; 
+                                     return(x)})
+
