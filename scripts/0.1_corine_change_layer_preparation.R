@@ -58,3 +58,24 @@ norway <- geodata::gadm(country = "NOR", level = 0,
 #Check shapefile
 plot(norway)
 
+## 2.2. Re-project Norway shapefile to match projection of CORINE layers ----
+
+# Check projections
+crs(norway, proj = TRUE)
+crs(corine_change_stack[[1]], proj = TRUE)
+
+# Reproject Norway shapefile to the CORINE layers
+norway_corine_projection <- project(norway, crs(corine_change_stack))
+
+# Check projection
+crs(norway_corine_projection, proj = TRUE) #projection correct now
+
+## 2.2. Crop and mask CORINE stack to Norway ----
+
+# Crop and mask
+norway_corine_change_stack <- crop(corine_change_stack, norway_corine_projection,
+                                   mask = TRUE)
+
+# Save the cropped layers 
+terra::writeRaster(norway_corine_change_stack,
+                   here("data", "norway_corine_stack.tif"))
